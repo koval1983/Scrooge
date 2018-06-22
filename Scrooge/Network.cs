@@ -39,7 +39,7 @@ namespace Scrooge
         {
             DNA = GetRandomDNA(DNALength);
             
-            //MakeQueue();
+            MakeQueue();
         }
 
         private void MakeQueue()
@@ -176,28 +176,10 @@ namespace Scrooge
 
             return _relations;
         }
-
-        /*private byte[][] _GetRandomDNA(int length)
-        {
-            byte[][] dna = new byte[length][];
-            
-            for (int i = 0; i < dna.Length; i++)
-            {
-                dna[i] = new byte[dna.Length - i - 1];
-
-                for (int j = 0; j < dna[i].Length; j++)
-                {
-                    dna[i][j] = (byte)rand.Next(0, 2);
-                }
-            }
-
-            //Console.WriteLine(Dna2Str(dna));
-            
-            return dna;
-        }*/
-
+        
         private int[][] GetRandomDNA(int length)
         {
+            
             int[][] dna = new int[length][];
             int l;
             for (int i = 0; i < dna.Length; i++)
@@ -215,6 +197,7 @@ namespace Scrooge
                 }
                 Array.Resize<int>(ref dna[i], l);
             }
+            
             return dna;
         }
 

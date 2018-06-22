@@ -16,7 +16,7 @@ namespace Scrooge
 
         public void Run(int poulation_size)
         {
-            Network[] generation = GetFirstGeneration(poulation_size, 500);
+            Network[] generation = GetFirstGeneration(poulation_size, 7);
             
             Console.WriteLine("evolution started...\n");
 
