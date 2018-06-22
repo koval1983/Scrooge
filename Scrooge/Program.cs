@@ -11,7 +11,7 @@ namespace Scrooge
         static void Main(string[] args)
         {
             Farm f = new Farm();
-
+            
             f.Run(512);
             
             Console.ReadKey(true);
