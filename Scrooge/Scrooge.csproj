@@ -69,6 +69,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DataProvider.cs" />
+    <Compile Include="DataProviderImage.cs" />
     <Compile Include="Farm.cs" />
     <Compile Include="MatrixTools.cs" />
     <Compile Include="Network.cs" />
