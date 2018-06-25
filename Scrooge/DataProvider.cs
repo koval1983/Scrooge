@@ -20,6 +20,7 @@ namespace Scrooge
 
         public DataProvider(string fname, int period)
         {
+            //Console.WriteLine("I am DataProvider");
             this.period = period;
             
             Prepare(fname);

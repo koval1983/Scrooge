@@ -16,7 +16,7 @@ namespace Scrooge
 
         public void Run(int poulation_size)
         {
-            Network[] generation = GetFirstGeneration(poulation_size, 3);
+            Network[] generation = GetFirstGeneration(poulation_size);
             
             Console.WriteLine("evolution started...\n");
 
@@ -70,7 +70,7 @@ namespace Scrooge
             
             if (children.Count > 0)
             {
-                Console.WriteLine("best score: " + children[0].GetScore() +" "+ children[0].Dna2Str(children[0].DNA));
+                Console.WriteLine("best score: " + children[0].GetScore());
                 Console.WriteLine("worst score: " + children[children.Count - 1].GetScore());
                 
                 /*if (bestResult > 0 && bestResult == children[0].GetScore() && bestNetwork.IsRelated(children[0]))
@@ -85,7 +85,7 @@ namespace Scrooge
 
             if (stuck_counter >= stuck_counterlimit)
             {
-                generation[0] = new Network(generation[0].DNA.Length);
+                generation[0] = new Network();
                 Console.WriteLine("leader is changed");
             }
             else
@@ -131,7 +131,7 @@ namespace Scrooge
             
             for (; last_place < length; last_place++)
             {
-                new_generation[last_place] = new Network(new_generation[0].DNA.Length);
+                new_generation[last_place] = new Network();
                 aliens++;
             }
 
@@ -140,12 +140,12 @@ namespace Scrooge
             return new_generation;
         }
 
-        public Network[] GetFirstGeneration(int size, int DNALength)
+        public Network[] GetFirstGeneration(int size)
         {
             Network[] generation = new Network[size];
 
             for (int i = 0; i < size; i++)
-                generation[i] = new Network(DNALength);
+                generation[i] = new Network();
 
             return generation;
         }

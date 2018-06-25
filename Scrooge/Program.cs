@@ -10,11 +10,11 @@ namespace Scrooge
     {
         static void Main(string[] args)
         {
-            /*Farm f = new Farm();
+            Farm f = new Farm();
             
-            f.Run(512);
+            f.Run(10);
             
-            Console.ReadKey(true);*/
+            Console.ReadKey(true);
 
             /*float[]
                 input = new float[] { 0.5f, 0.7f },
@@ -41,7 +41,7 @@ namespace Scrooge
         //delegate float s2f(string i);
         static void Test()
         {
-            Network n = new Network(4);
+            Network n = new Network();
 
             Console.WriteLine("score: "+ n.GetScore());
         }

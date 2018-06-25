@@ -8,20 +8,26 @@ namespace Scrooge
 {
     class NetworkTester
     {
-        static readonly int period = 10;
         static readonly DataProvider dataProvider;
+
         private int counter = 0;
+
         static NetworkTester()
         {
-            dataProvider = new DataProvider("data/GAZP_170626_180625.txt", period);
+            dataProvider = new DataProvider("data/GAZP_170626_180625.txt", Network.GetInputLayerSize() / 5);
         }
 
         private float fund = 0;
         private int qty = 0;
 
+        public NetworkTester()
+        {
+            //Console.WriteLine("I am NetworkTester");
+        }
+
         private void Buy(float price, int _qty)
         {
-            Console.WriteLine("Buy " + _qty + " x " + price);
+            //Console.WriteLine("Buy " + _qty + " x " + price);
             qty  += _qty;
             fund -= price * _qty;
             counter++;
@@ -29,7 +35,7 @@ namespace Scrooge
 
         private void Sell(float price, int _qty)
         {
-            Console.WriteLine("Sell " + _qty + " x " + price);
+            //Console.WriteLine("Sell " + _qty + " x " + price);
             qty -= _qty;
             fund += price * _qty;
             counter++;
@@ -47,7 +53,7 @@ namespace Scrooge
 
             dataProvider.Reset();
             int i = 0;
-            while ((example = dataProvider.GetNextExample()) != null)
+            while ((example = dataProvider.GetNextExample()) != null && i < 10000)
             {
                 res = n.Query(example[1]);
                 action = GetMaxKey(res);
@@ -86,10 +92,10 @@ namespace Scrooge
             else if (qty > 0)
                 Sell(price, qty);
 
-            Console.WriteLine("fund: " + fund);
+            /*Console.WriteLine("fund: " + fund);
             Console.WriteLine("qty: " + qty);
             Console.WriteLine("i: " + i);
-            Console.WriteLine("counter: " + counter);
+            Console.WriteLine("counter: " + counter);*/
 
             return fund;
         }

@@ -9,80 +9,63 @@ namespace Scrooge
 {
     class Network : IComparable
     {
-        private static int max_input_layer_size = 20;
-        private static int max_layer_size = 150;
-        private static int min_layer_size = 3;
-        private static readonly int output_layer_size = 3;
-        private static readonly int relation_degree = 1;
+        private static readonly int[] layers = new int[] { 25, 100, 3 };
         private static int last_id = 0;
+        private static Random rand = new Random();
+        private static readonly int relation_degree = 3;
 
         private readonly int id;
-        private int[][] parents = new int[0][];
-
-        /**
-         * length of DNA is a number of layers in network, each numeric is a number of nodes in layer
-         * first node is a learning_rate. To get a correct rate you need divide rate by 100
-         * second DNA.node is a number of input network's nodes
-         * last node everytime is 3 because output layer size is 3
-         */
-        public readonly int[] DNA;
-        private float[][,] matrices;
-        private static Random rand = new Random();
+        public readonly float[] DNA;
         private float score;
 
-        private Network()
+        private int[][] parents = new int[0][];
+        private float[][,] matrices;
+
+
+        /*private static int max_input_layer_size = 20;
+        private static int max_layer_size = 150;
+        private static int min_layer_size = 3;
+        private static readonly int output_layer_size = 3;*/
+
+        public static int GetInputLayerSize()
+        {
+            return layers[0];
+        }
+
+        public Network()
         {
             id = ++last_id;
+            DNA = GetRandomDNA();
         }
-
-        public Network(int[] dna) : this()
+        
+        public Network(float[] dna, Network parent1, Network parent2)
         {
+            id = ++last_id;
             DNA = dna;
-        }
-
-        public Network(int[] dna, Network parent1, Network parent2) : this(dna)
-        {
             SetNewParents(parent1, parent2);
-        }
-
-        public Network(int DNALength) : this()
-        {
-            DNA = GetRandomDNA(DNALength);
         }
 
         protected float[][,] GetMatrices()
         {
             if(matrices == null)
             {
-                matrices = new float[DNA.Length - 2][,];
-                outputs  = new float[DNA.Length - 1][];
-                inputs   = new float[DNA.Length - 1][];
+                matrices = new float[layers.Length - 1][,];
+                outputs  = new float[layers.Length][];
+                inputs   = new float[layers.Length][];
 
-                for (int i = 1; i < DNA.Length - 1; i++)
+                int position = 0;
+
+                for (int i = 0; i < layers.Length - 1; i++)
                 {
-                    matrices[i - 1] = GetRandomMatrix(DNA[i + 1], DNA[i]);
+                    matrices[i] = new float[layers[i + 1], layers[i]];
+
+                    for (int row = 0; row < matrices[i].GetLength(0); row++)
+                        for (int column = 0; column < matrices[i].GetLength(1); column++)
+                            matrices[i][row, column] = DNA[position++];
                 }
             }
             
             return matrices;
-        }
-
-        protected float[,] GetRandomMatrix(int rows, int cols)
-        {
-            float[,] m = new float[rows, cols];
-            
-            for (int r = 0; r < rows; r++)
-            {
-                for (int c = 0; c < cols; c++)
-                {
-                    m[r, c] = (float)rand.NextDouble() - 0.5f;
-
-                    if (m[r, c] == 0)
-                        m[r, c] = 0.01f;
-                }
-            }
-
-            return m;
         }
 
         public bool IsRelated(Network other)
@@ -107,23 +90,21 @@ namespace Scrooge
         {
             List<Network> children = new List<Network>();
 
-            int
-                divider1 = rand.Next(1, DNA.Length),
-                divider2 = rand.Next(1, other.DNA.Length);
+            int divider = rand.Next(1, DNA.Length);
 
             //for the first child we take the first part of self and the second part of other
-            int[] new_dna1 = new int[divider1 + other.DNA.Length - divider2];
+            float[] new_dna1 = new float[DNA.Length];
 
-            Array.Copy(DNA, new_dna1, divider1);
-            Array.Copy(other.DNA, divider2, new_dna1, divider1, other.DNA.Length - divider2);
+            Array.Copy(DNA, new_dna1, divider);
+            Array.Copy(other.DNA, divider, new_dna1, divider, other.DNA.Length - divider);
 
             children.Add(new Network(new_dna1, this, other));
 
             //for the second child we take the first part of other and the second part of self 
-            int[] new_dna2 = new int[divider2 + DNA.Length - divider1];
+            float[] new_dna2 = new float[DNA.Length];
 
-            Array.Copy(other.DNA, new_dna2, divider2);
-            Array.Copy(DNA, divider1, new_dna2, divider2, DNA.Length - divider1);
+            Array.Copy(other.DNA, new_dna2, divider);
+            Array.Copy(DNA, divider, new_dna2, divider, DNA.Length - divider);
 
             children.Add(new Network(new_dna2, other, this));
 
@@ -166,21 +147,18 @@ namespace Scrooge
             return _relations;
         }
         
-        private int[] GetRandomDNA(int length)
+        private float[] GetRandomDNA()
         {
+            int length = 0;
+
+            for (int i = 0; i < layers.Length - 1; i++)
+                length += layers[i] * layers[i + 1];
             
-            int[] dna = new int[length];
-
-            dna[0] = rand.Next(1, 11);//learning rate
-            dna[1] = rand.Next(min_layer_size, max_input_layer_size + 1);//size of input layer
-
-            for (int i = 2; i < dna.Length - 1; i++)
-            {
-                dna[i] = rand.Next(min_layer_size, max_layer_size + 1);
-            }
-
-            dna[dna.Length - 1] = output_layer_size;
-
+            float[] dna = new float[length];
+            
+            for (int i = 0; i < dna.Length - 1; i++)
+                dna[i] = (float)rand.Next(-99, 100) / 100;
+            
             return dna;
         }
 
@@ -239,7 +217,7 @@ namespace Scrooge
             return score;
         }
 
-        public string Dna2Str(int[] dna)
+        public string Dna2Str(float[] dna)
         {
             string res = " [ ";
 
