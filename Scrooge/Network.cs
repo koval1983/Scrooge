@@ -28,7 +28,7 @@ namespace Scrooge
         public readonly int[] DNA;
         private float[][,] matrices;
         private static Random rand = new Random();
-        private float score = -1;
+        private float score;
 
         private Network()
         {
@@ -222,15 +222,18 @@ namespace Scrooge
             }
         }
 
+        private bool need_to_test = true;
         public float GetScore()
         {
-            if (score == -1)
+            if (need_to_test)
             {
-                //GetMatrices();
+                need_to_test = false;
 
-                score = DNA.Length;
+                NetworkTester test = new NetworkTester();
 
-                //matrices = null;
+                score = test.Test(this);
+                
+                matrices = null;
             }
 
             return score;
@@ -284,10 +287,11 @@ namespace Scrooge
             return (float)DNA[0] / 100;
         }
 
-        public void Train(float[] target, float[] input)
+        public float[] Train(float[] target, float[] input)
         {
+            float[] answer = Query(input);
             float[][,] matrices = GetMatrices();
-            float[]    error    = MatrixTools.SubstractVV(target, Query(input));
+            float[]    error    = MatrixTools.SubstractVV(target, answer);
 
             float[] minus_e, derivative, vector_one;
             float[,] weights_delta;
@@ -306,6 +310,8 @@ namespace Scrooge
 
                 matrices[i] = MatrixTools.AddMM(matrices[i], weights_delta);
             }
+
+            return answer;
         }
 
         protected float[] ActivationFunction(float[] vector)

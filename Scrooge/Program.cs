@@ -41,57 +41,9 @@ namespace Scrooge
         //delegate float s2f(string i);
         static void Test()
         {
-            int period = 10;
-            Network n = new Network(new int[] { 15, period * 5, 100, 3 });
-            DataProvider dp = new DataProvider("data/GAZP_170625_180624.txt", period);
+            Network n = new Network(4);
 
-            float[][] example;
-            int t = 0, score = 0, counter = 0;
-            while ((example = dp.GetNextExample()) != null)
-            {
-                //t++;
-                if (++t <= 210000)
-                    n.Train(example[0], example[1]);
-                else
-                {
-                    if (GetMaxKey(example[0]) == GetMaxKey(n.Query(example[1])))
-                        score++;
-
-                    counter++;
-                }
-            }
-            //Console.WriteLine(t);
-            Console.WriteLine("result is "+ score +" / "+ counter +" ( "+ ((float)score / counter) +" )");
-            /*float[][] data;
-            int c = 0;
-            while ((data = dp.GetData()) != null)
-            {
-                n.Train(data[0], data[1]);
-                c++;
-
-                if (c % 1000 == 0) Console.Write(".");
-            }
-            Console.WriteLine("");
-
-
-            dp = new DataProviderImage("data/mnist_test.csv");
-
-            int counter = 0, score = 0;
-            int got_answer, correct_answer;
-
-            while ((data = dp.GetData()) != null)
-            {
-                got_answer = GetMaxKey(n.Query(data[1]));
-                correct_answer = GetMaxKey(data[0]);
-
-                if (got_answer == correct_answer)
-                    score++;
-                counter++;
-
-                Console.WriteLine(got_answer +" : "+ correct_answer);
-            }
-
-            Console.WriteLine("result is "+ score +" / "+ counter);*/
+            Console.WriteLine("score: "+ n.GetScore());
         }
 
         static int GetMaxKey(float[] arr)
