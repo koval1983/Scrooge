@@ -3,16 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-//using Alea;
+using Alea;
+using Alea.Parallel;
 
 namespace Scrooge
 {
     class Network : IComparable
     {
-        private static readonly int[] layers = new int[] { 25, 100, 3 };
+        private static readonly int[] layers = new int[] { 200, 100, 100, 3 };
         private static int last_id = 0;
         private static Random rand = new Random();
-        private static readonly int relation_degree = 3;
+        private static readonly int relation_degree = 1;
 
         private readonly int id;
         public readonly float[] DNA;
@@ -30,6 +31,12 @@ namespace Scrooge
         public static int GetInputLayerSize()
         {
             return layers[0];
+        }
+
+        public Network(float[] dna)
+        {
+            id = ++last_id;
+            DNA = dna;
         }
 
         public Network()
@@ -54,7 +61,10 @@ namespace Scrooge
                 inputs   = new float[layers.Length][];
 
                 int position = 0;
+                var gpu = Gpu.Default;
 
+                int[] l = layers;
+                
                 for (int i = 0; i < layers.Length - 1; i++)
                 {
                     matrices[i] = new float[layers[i + 1], layers[i]];
@@ -98,7 +108,12 @@ namespace Scrooge
             Array.Copy(DNA, new_dna1, divider);
             Array.Copy(other.DNA, divider, new_dna1, divider, other.DNA.Length - divider);
 
-            children.Add(new Network(new_dna1, this, other));
+            Network n = new Network(new_dna1, this, other);
+
+            n.GetScore();
+
+            return n;
+            /*children.Add(new Network(new_dna1, this, other));
 
             //for the second child we take the first part of other and the second part of self 
             float[] new_dna2 = new float[DNA.Length];
@@ -111,7 +126,7 @@ namespace Scrooge
             //sorting
             children.Sort();
             
-            return children[0];
+            return children[0];*/
         }
 
         public int GetId()
@@ -216,7 +231,7 @@ namespace Scrooge
 
             return score;
         }
-
+        
         public string Dna2Str(float[] dna)
         {
             string res = " [ ";

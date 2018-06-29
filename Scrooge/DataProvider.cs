@@ -3,7 +3,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+//using System.Threading.Tasks;
 
 namespace Scrooge
 {
@@ -33,8 +33,10 @@ namespace Scrooge
             counter = period - 1;
         }
 
-        public float[][] GetNextExample()
+        public float[][] GetNextExample(int counter)
         {
+            counter += period - 1;
+
             if (counter >= changes.Length)
                 return null;
 
@@ -81,11 +83,11 @@ namespace Scrooge
                 list.RemoveAt(0);
                 
                 float[][] tmp_data = new float[list.Count][];
-                string[] tmp = new string[5];
+                string[] tmp = new string[2];
 
                 for (int i = 0; i < list.Count; i++)
                 {
-                    Array.Copy(list[i].Split(delimiter), 4, tmp, 0, tmp.Length);
+                    Array.Copy(list[i].Split(delimiter), 7, tmp, 0, tmp.Length);
 
                     tmp_data[i] = Array.ConvertAll<string, float>(tmp, new Converter<string, float>(float.Parse));
                 }

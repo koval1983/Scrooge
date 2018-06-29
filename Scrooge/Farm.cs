@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Scrooge
 {
@@ -38,7 +39,10 @@ namespace Scrooge
 
             List<Network> children = new List<Network>();
             
-            int decile = generation.Length / 10;
+            int decile = generation.Length / 10 + 1;
+
+            Thread[] threads = new Thread[3];
+            int t = 0, index = 0;
 
             for (int i = 0; i < generation.Length; i++)
             {
@@ -53,12 +57,35 @@ namespace Scrooge
                         continue;
                         /*second = new Network(first.DNA.Length);*/
                     }
+
+                    t = 0;
                     
-                    children.Add(first.Cross(second));
+                    while (true)
+                    {
+                        if (threads[t] == null || !threads[t].IsAlive)
+                        {
+                            threads[t] = new Thread(Cross);
+
+                            threads[t].Start(new Couple(first, second, index++, children));
+                            
+                            break;
+                        }
+                        
+                        if (++t >= threads.Length)
+                            t = 0;
+                    }
+
+                    //children.Add(first.Cross(second));
                 }
 
                 if (i > 0 && i % decile == 0)
                     Console.Write('.');
+            }
+
+            for (int i = 0; i < threads.Length; i++)
+            {
+                if (threads[i] != null && threads[i].IsAlive)
+                    threads[i].Join();
             }
 
             Console.WriteLine();
@@ -81,7 +108,7 @@ namespace Scrooge
                 Console.WriteLine("stuck counter: " + stuck_counter);*/
             }
 
-            generation = FilterBrothersAndSisters(children, generation.Length);
+            generation = FilterBrothersAndSisters(children, generation.Length, generation_number);
 
             if (stuck_counter >= stuck_counterlimit)
             {
@@ -97,7 +124,14 @@ namespace Scrooge
             return generation;
         }
 
-        protected Network[] FilterBrothersAndSisters(List<Network> children, int length)
+        static void Cross(object couple)
+        {
+            Couple c = (Couple)couple;
+
+            c.Cross();
+        }
+
+        protected Network[] FilterBrothersAndSisters(List<Network> children, int length, int generation_number)
         {
             Console.WriteLine("filtering...");
 
@@ -121,11 +155,17 @@ namespace Scrooge
 
             loop0:;
 
-                if (i > 0 && i % decile == 0)
+                if (i > 0 && decile > 0 && i % decile == 0)
                     Console.Write('.');
             }
 
             Console.WriteLine();
+
+            Network[] toSave = new Network[last_place];
+
+            Array.Copy(new_generation, toSave, last_place);
+
+            Save(toSave, generation_number);
 
             int aliens = 0;
             
@@ -138,6 +178,21 @@ namespace Scrooge
             Console.WriteLine("aliens: " + aliens);
 
             return new_generation;
+        }
+
+        protected void Save(Network[] list, int generation_number)
+        {
+            string[] lines = new string[list.Length];
+
+            for (int i = 0; i < list.Length; i++)
+            {
+                lines[i] = string.Join(" ", list[i].DNA);
+            }
+                
+
+            System.IO.File.WriteAllLines("/generations/generation_"+ generation_number +"("+ list[0].GetScore() + ").txt", lines);
+
+            Console.WriteLine("generation#"+ generation_number +" is saved");
         }
 
         public Network[] GetFirstGeneration(int size)

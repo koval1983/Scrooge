@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,9 +13,12 @@ namespace Scrooge
 
         private int counter = 0;
 
+        float volume = 0;
+        int number_of_trades = 0;
+
         static NetworkTester()
         {
-            dataProvider = new DataProvider("data/GAZP_170626_180625.txt", Network.GetInputLayerSize() / 5);
+            dataProvider = new DataProvider("data/SPFB.RTS_170627_180626 (1).txt", Network.GetInputLayerSize() / 2);
         }
 
         private float fund = 0;
@@ -41,7 +45,7 @@ namespace Scrooge
             counter++;
         }
 
-        public float Test(Network n)
+        public float Test(Network n, int from = 0, int to = 17785, bool log = false)
         {
             float price = 0;//текущая цена актива
 
@@ -51,53 +55,87 @@ namespace Scrooge
             int
                 action;//текущее действие
 
+            //StreamWriter file = new StreamWriter(@"D:\generations\test.csv");
+            
             dataProvider.Reset();
-            int i = 0;
-            while ((example = dataProvider.GetNextExample()) != null && i < 10000)
+            
+            while ((example = dataProvider.GetNextExample(from++)) != null && (from < to || to <= 0))
             {
                 res = n.Query(example[1]);
                 action = GetMaxKey(res);
-                i++;
+                
                 //Console.WriteLine(res[0] +" "+ res[1] +" "+ res[2]);
 
                 price  = example[0][0];
                 
                 if (action == 0)//to short
-                {
-                    if (qty < 0)
-                        continue;
-
-                    Sell(price, 1 + qty);
-                }
+                    ToShort(price);
                 else if (action == 1)//to hold
-                {
-                    if (qty < 0)
-                        Buy(price, -qty);
-                    else if (qty > 0)
-                        Sell(price, qty);
-                    else
-                        continue;
-                }
+                    ToHold(price);
                 else//to long
-                {
-                    if (qty > 0)
-                        continue;
+                    ToLong(price);
 
-                    Buy(price, 1 - qty);
+                if (log)
+                {
+                    //file.WriteLine(price + ";" + volume);
                 }
             }
 
-            if (qty < 0)
+            ToHold(price);
+
+            if (log)
+            {
+                //file.WriteLine(price + ";" + volume);
+            }
+            
+            //file.Dispose();
+
+            if (number_of_trades == 0)
+                return 0;
+
+            float avg = fund / number_of_trades;
+            int k = fund > 0 ? 1 : -1;
+            return k * avg * avg * number_of_trades;
+        }
+
+        public void ToLong(float price)
+        {
+            if (qty > 0)
+                return;
+            
+            if(qty < 0)
+                Buy(price, -qty);
+
+            volume = fund;
+
+            Buy(price, 1);
+        }
+
+        public void ToHold(float price)
+        {
+            if (qty == 0)
+                return;
+            else if (qty < 0)
                 Buy(price, -qty);
             else if (qty > 0)
                 Sell(price, qty);
 
-            /*Console.WriteLine("fund: " + fund);
-            Console.WriteLine("qty: " + qty);
-            Console.WriteLine("i: " + i);
-            Console.WriteLine("counter: " + counter);*/
+            number_of_trades++;
 
-            return fund;
+            volume = fund;
+        }
+
+        public void ToShort(float price)
+        {
+            if (qty < 0)
+                return;
+
+            if (qty > 0)
+                Sell(price, qty);
+
+            volume = fund;
+
+            Sell(price, 1);
         }
 
         static int GetMaxKey(float[] arr)
