@@ -71,12 +71,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Couple.cs" />
-    <Compile Include="DataProvider.cs" />
     <Compile Include="Farm.cs" />
     <Compile Include="MatrixTools.cs" />
     <Compile Include="Network.cs" />
-    <Compile Include="NetworkTester.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

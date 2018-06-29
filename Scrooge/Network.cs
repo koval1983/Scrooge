@@ -10,13 +10,12 @@ namespace Scrooge
 {
     class Network : IComparable
     {
-        private static readonly int[] layers = new int[] { 200, 100, 100, 3 };
         private static int last_id = 0;
         private static Random rand = new Random();
         private static readonly int relation_degree = 1;
 
         private readonly int id;
-        public readonly float[] DNA;
+        public readonly int[][] DNA;
         private float score;
 
         private int[][] parents = new int[0][];
@@ -28,27 +27,23 @@ namespace Scrooge
         private static int min_layer_size = 3;
         private static readonly int output_layer_size = 3;*/
 
-        public static int GetInputLayerSize()
+        /*public static int GetInputLayerSize()
         {
             return layers[0];
-        }
-
-        public Network(float[] dna)
+        }*/
+        
+        public Network(int dna_length)
         {
             id = ++last_id;
-            DNA = dna;
-        }
-
-        public Network()
-        {
-            id = ++last_id;
-            DNA = GetRandomDNA();
+            DNA = GetRandomDNA(dna_length);
         }
         
-        public Network(float[] dna, Network parent1, Network parent2)
+        public Network(int[][] dna, Network parent1, Network parent2)
         {
             id = ++last_id;
             DNA = dna;
+
+            //Console.WriteLine(Dna2Str(DNA));
             SetNewParents(parent1, parent2);
         }
 
@@ -56,23 +51,7 @@ namespace Scrooge
         {
             if(matrices == null)
             {
-                matrices = new float[layers.Length - 1][,];
-                outputs  = new float[layers.Length][];
-                inputs   = new float[layers.Length][];
-
-                int position = 0;
-                var gpu = Gpu.Default;
-
-                int[] l = layers;
                 
-                for (int i = 0; i < layers.Length - 1; i++)
-                {
-                    matrices[i] = new float[layers[i + 1], layers[i]];
-
-                    for (int row = 0; row < matrices[i].GetLength(0); row++)
-                        for (int column = 0; column < matrices[i].GetLength(1); column++)
-                            matrices[i][row, column] = DNA[position++];
-                }
             }
             
             return matrices;
@@ -96,37 +75,23 @@ namespace Scrooge
             return false;
         }
 
-        public Network Cross(Network other)
+        public Network Cross(Network that)
         {
             List<Network> children = new List<Network>();
 
-            int divider = rand.Next(1, DNA.Length);
+            int
+                divider1 = rand.Next(1, this.DNA.Length),
+                divider2 = rand.Next(1, that.DNA.Length);
 
             //for the first child we take the first part of self and the second part of other
-            float[] new_dna1 = new float[DNA.Length];
+            int[][] new_dna = new int[divider1 + that.DNA.Length - divider2][];
 
-            Array.Copy(DNA, new_dna1, divider);
-            Array.Copy(other.DNA, divider, new_dna1, divider, other.DNA.Length - divider);
+            Array.Copy(this.DNA, new_dna, divider1);
+            Array.Copy(that.DNA, divider2, new_dna, divider1, that.DNA.Length - divider2);
 
-            Network n = new Network(new_dna1, this, other);
-
-            n.GetScore();
-
-            return n;
-            /*children.Add(new Network(new_dna1, this, other));
-
-            //for the second child we take the first part of other and the second part of self 
-            float[] new_dna2 = new float[DNA.Length];
-
-            Array.Copy(other.DNA, new_dna2, divider);
-            Array.Copy(DNA, divider, new_dna2, divider, DNA.Length - divider);
-
-            children.Add(new Network(new_dna2, other, this));
-
-            //sorting
-            children.Sort();
+            Network n = new Network(new_dna, this, that);
             
-            return children[0];*/
+            return n;
         }
 
         public int GetId()
@@ -162,18 +127,13 @@ namespace Scrooge
             return _relations;
         }
         
-        private float[] GetRandomDNA()
+        private int[][] GetRandomDNA(int dna_length)
         {
-            int length = 0;
+            int[][] dna = new int[dna_length][];
 
-            for (int i = 0; i < layers.Length - 1; i++)
-                length += layers[i] * layers[i + 1];
-            
-            float[] dna = new float[length];
-            
-            for (int i = 0; i < dna.Length - 1; i++)
-                dna[i] = (float)rand.Next(-99, 100) / 100;
-            
+            /*for (int i = 0; i < dna_length; i++)
+                dna[i] = id;*/
+
             return dna;
         }
 
@@ -215,10 +175,10 @@ namespace Scrooge
             }
         }
 
-        private bool need_to_test = true;
+        //private bool need_to_test = true;
         public float GetScore()
         {
-            if (need_to_test)
+            /*if (need_to_test)
             {
                 need_to_test = false;
 
@@ -227,12 +187,12 @@ namespace Scrooge
                 score = test.Test(this);
                 
                 matrices = null;
-            }
+            }*/
 
             return score;
         }
         
-        public string Dna2Str(float[] dna)
+        public string Dna2Str(int[] dna)
         {
             string res = " [ ";
 
@@ -277,7 +237,7 @@ namespace Scrooge
 
         public float GetLearningRate()
         {
-            return (float)DNA[0] / 100;
+            return 0.15f;
         }
 
         public float[] Train(float[] target, float[] input)
