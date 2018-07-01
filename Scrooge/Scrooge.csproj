@@ -74,6 +74,7 @@
     <Compile Include="Farm.cs" />
     <Compile Include="MatrixTools.cs" />
     <Compile Include="Network.cs" />
+    <Compile Include="NetworkTest.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

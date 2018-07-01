@@ -50,10 +50,7 @@ namespace Scrooge
                     second = generation[j];
 
                     if (i == j)
-                    {
                         continue;
-                        /*second = new Network(first.DNA.Length);*/
-                    }
                     
                     children.Add(first.Cross(second));
                 }

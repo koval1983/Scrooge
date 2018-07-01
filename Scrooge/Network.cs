@@ -42,8 +42,7 @@ namespace Scrooge
         {
             id = ++last_id;
             DNA = dna;
-
-            //Console.WriteLine(Dna2Str(DNA));
+            
             SetNewParents(parent1, parent2);
         }
 
@@ -83,7 +82,7 @@ namespace Scrooge
                 divider1 = rand.Next(1, this.DNA.Length),
                 divider2 = rand.Next(1, that.DNA.Length);
 
-            //for the first child we take the first part of self and the second part of other
+            //for the child we take the first part of this and the second part of that
             int[][] new_dna = new int[divider1 + that.DNA.Length - divider2][];
 
             Array.Copy(this.DNA, new_dna, divider1);
@@ -175,19 +174,17 @@ namespace Scrooge
             }
         }
 
-        //private bool need_to_test = true;
+        private bool need_to_test = true;
         public float GetScore()
         {
-            /*if (need_to_test)
+            if (need_to_test)
             {
                 need_to_test = false;
 
-                NetworkTester test = new NetworkTester();
+                NetworkTest nt = new NetworkTest(this);
 
-                score = test.Test(this);
-                
-                matrices = null;
-            }*/
+                score = nt.Do();
+            }
 
             return score;
         }
