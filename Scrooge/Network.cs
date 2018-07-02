@@ -13,6 +13,8 @@ namespace Scrooge
         private static int last_id = 0;
         private static Random rand = new Random();
         private static readonly int relation_degree = 1;
+        private static readonly int input_layer_size = 10;
+        private static readonly int output_layer_size = 3;
 
         private readonly int id;
         public readonly int[][] DNA;
@@ -20,8 +22,9 @@ namespace Scrooge
 
         private int[][] parents = new int[0][];
         private float[][,] matrices;
-
-
+        private float[][] values;//тут лежат значения каждого нейрона (после функции активации)
+        private int[][] vectors_keys;
+        
         /*private static int max_input_layer_size = 20;
         private static int max_layer_size = 150;
         private static int min_layer_size = 3;
@@ -36,13 +39,15 @@ namespace Scrooge
         {
             id = ++last_id;
             DNA = GetRandomDNA(dna_length);
+            MakeQueue();
+            //Console.WriteLine(Dna2Str(DNA));
         }
         
         public Network(int[][] dna, Network parent1, Network parent2)
         {
             id = ++last_id;
             DNA = dna;
-            
+            MakeQueue();
             SetNewParents(parent1, parent2);
         }
 
@@ -54,6 +59,129 @@ namespace Scrooge
             }
             
             return matrices;
+        }
+
+        private void MakeQueue()
+        {
+            int[]  queue           = new int[DNA.Length];       //порядок обработки нейронов, номер нода -> номер очереди
+            byte[] map_outputs     = new byte[DNA.Length];      //здесь отмечаем нейроны которые соединяются с последним слоем
+            List<int>[] links_from = new List<int>[DNA.Length]; //здесь ДНК наоборот - номер нейрона -> список с номерами "входящих" связей
+            
+            int node_link_to, current_node_level, max_level = 0;
+            bool is_output;
+            for (int current_node = 0; current_node < DNA.Length; current_node++)
+            {
+                current_node_level = queue[current_node];
+                
+                is_output = true;
+                
+                for (int i = 0; i < DNA[current_node].Length; i++)
+                {
+                    node_link_to = current_node + DNA[current_node][i];
+
+                    if (node_link_to >= DNA.Length)
+                        continue;
+
+                    if (links_from[node_link_to] == null)
+                        links_from[node_link_to] = new List<int>();
+
+                    links_from[node_link_to].Add(current_node);
+
+                    
+                    queue[node_link_to] = Math.Max(queue[node_link_to], current_node_level + 1);
+                    max_level = Math.Max(queue[node_link_to], max_level);
+                    is_output = false;
+                }
+
+                map_outputs[current_node] = (byte) (is_output? 1 : 0);
+            }
+
+
+            List<int>[] layers = new List<int>[max_level + 1];//слои - массив (номер слоя -> массив с номерами нейронов)
+
+            for (int i = 0; i < queue.Length; i++)
+            {
+                if (layers[queue[i]] == null)
+                    layers[queue[i]] = new List<int>();
+
+                layers[queue[i]].Add(i);
+            }
+
+            //строим векторы и матрицы
+            for (int i = 0; i < queue.Length; i++)
+            {
+
+            }
+
+            /*Console.WriteLine(Dna2Str(DNA));
+
+            string res = "queue   [ ";
+
+            for (int j = 0; j < queue.Length; j++)
+            {
+                res += queue[j] + " ";
+            }
+
+                res += "] ";
+
+                Console.WriteLine(res);
+
+            res = "outputs [ ";
+
+            for (int j = 0; j < map_outputs.Length; j++)
+            {
+                res += map_outputs[j] + " ";
+            }
+
+            res += "] ";
+
+            Console.WriteLine(res);
+            
+            res = "links_from [ ";
+
+            for (int i = 0; i < links_from.Length; i++)
+            {
+                res += " [ ";
+
+                if(links_from[i] != null)
+                {
+                    for (int j = 0; j < links_from[i].Count; j++)
+                    {
+                        res += links_from[i][j] + " ";
+                    }
+                }
+
+
+                res += "] ";
+            }
+
+            res += "]";
+
+            Console.WriteLine(res);
+
+            res = "layers [ ";
+
+            for (int i = 0; i < layers.Length; i++)
+            {
+                res += " [ ";
+
+                if (layers[i] != null)
+                {
+                    for (int j = 0; j < layers[i].Count; j++)
+                    {
+                        res += layers[i][j] + " ";
+                    }
+                }
+
+
+                res += "] ";
+            }
+
+            res += "]";
+
+            Console.WriteLine(res);
+
+            Console.ReadKey(true);*/
         }
 
         public bool IsRelated(Network other)
@@ -129,9 +257,22 @@ namespace Scrooge
         private int[][] GetRandomDNA(int dna_length)
         {
             int[][] dna = new int[dna_length][];
+            int l;
+            for (int i = 0; i < dna_length; i++)
+            {
+                dna[i] = new int[dna.Length - i - 1];
+                l = 0;
+                for (int j = 0; j < dna[i].Length; j++)
+                {
+                    if (rand.Next(0, 2) == 0)
+                        continue;
+                    
+                    dna[i][l] = j + 1;
+                    l++;
+                }
 
-            /*for (int i = 0; i < dna_length; i++)
-                dna[i] = id;*/
+                Array.Resize<int>(ref dna[i], l);
+            }
 
             return dna;
         }
@@ -189,17 +330,24 @@ namespace Scrooge
             return score;
         }
         
-        public string Dna2Str(int[] dna)
+        public string Dna2Str(int[][] dna)
         {
             string res = " [ ";
-
+            
             for (int i = 0; i < dna.Length; i++)
             {
-                res += dna[i] + " ";
+                res += " [ ";
+                
+                for (int j = 0; j < dna[i].Length; j++)
+                {
+                    res += dna[i][j] + " ";
+                }
+                
+                res += "] ";
             }
-
+            
             res += "]";
-
+            
             return res;
         }
 

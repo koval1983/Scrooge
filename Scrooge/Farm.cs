@@ -144,7 +144,7 @@ namespace Scrooge
             Network[] g = new Network[size];
 
             for (int i = 0; i < size; i++)
-                g[i] = new Network(3);
+                g[i] = new Network(7);
 
             return g;
         }
