@@ -28,18 +28,21 @@ namespace Scrooge
         private float[][,] matrices;
         private int [][] incoming_vectors_keys;//"входящие" векторы. weights_matrice x incoming_vector = layer_input
         private List<int>[] layers;//слои - массив (номер слоя -> массив с номерами нейронов)
-        
+
+        public Network(int[][] dna)
+        {
+            id = ++last_id;
+            DNA = dna;
+        }
+
         public Network(int dna_length)
         {
             id = ++last_id;
             DNA = GetRandomDNA(dna_length);
         }
         
-        public Network(int[][] dna, Network parent1, Network parent2)
+        public Network(int[][] dna, Network parent1, Network parent2) : this(dna)
         {
-            id = ++last_id;
-            DNA = dna;
-            
             SetNewParents(parent1, parent2);
         }
         
@@ -316,11 +319,8 @@ namespace Scrooge
 
         public void SetVector(List<int> keys, float[] values)
         {
-            Console.WriteLine(MatrixTools.Vector2Str(keys.ToArray<int>()));
-            Console.WriteLine(MatrixTools.Vector2Str(this.values));
             for (int i = 0; i < values.Length; i++)
                 this.values[keys[i]] = values[i];
-            Console.WriteLine(MatrixTools.Vector2Str(this.values));
         }
 
         public float[] Query(float[] _input)
@@ -349,20 +349,20 @@ namespace Scrooge
 
         public float GetLearningRate()
         {
-            return 0.15f;
+            return 0.5f;
         }
 
-        /*public float[] Train(float[] target, float[] input)
+        /*public void _Train(float[] expected_output)
         {
-            float[] answer = Query(input);
-            //float[][,] matrices = GetMatrices();
-            float[]    error    = MatrixTools.SubstractVV(target, answer);
+            float[] error = MatrixTools.SubtractVV(expected_output, output);
 
             float[] minus_e, derivative, vector_one;
             float[,] weights_delta;
-            
+
+            float[] _output = output;
+
             for (int i = matrices.Length - 1; i >= 0; i--)
-            {//sigmoid is outputs[i + 1]
+            {
                 derivative = MatrixTools.MultiplyVV(outputs[i + 1], MatrixTools.AddVI(MatrixTools.MultiplyVI(outputs[i + 1], -1), 1));
 
                 minus_e = MatrixTools.MultiplyVI(error, 1 * GetLearningRate());
@@ -375,16 +375,83 @@ namespace Scrooge
 
                 matrices[i] = MatrixTools.AddMM(matrices[i], weights_delta);
             }
-
-            return answer;
         }*/
+
+        protected void PutErrors(int[] keys, float[] values)
+        {
+            //Console.WriteLine("keys " + keys.Length);
+            //Console.WriteLine("values " + values.Length);
+            for (int i = 0; i < values.Length; i++)
+                errors[keys[i]] += values[i];
+        }
+
+        protected float[] GetErrors(List<int> keys)
+        {
+            float[] e = new float[keys.Count];
+
+            for (int i = 0; i < e.Length; i++)
+                e[i] = errors[keys[i]];
+
+            return e;
+        }
+
+        protected float[] errors;
+        public void Train(float[] expected_output)
+        {
+            errors = new float[DNA.Length];
+            float[] output_error;
+            float[] _error, tmp, prev_output, next_output;
+            float[,] d;
+
+
+            for (int i = matrices.Length - 1; i >= 0; i--)
+            {
+                if (i == matrices.Length - 1)
+                {
+                    next_output = output;
+                    output_error = MatrixTools.SubtractVV(expected_output, output);
+                }
+                else
+                {
+                    next_output = GetVector(layers[i].ToArray());
+                    output_error = GetErrors(layers[i]);
+                }
+
+                if (i == 0)
+                {
+                    prev_output = input;
+                }
+                else
+                {
+                    prev_output = GetVector(incoming_vectors_keys[i]);
+                }
+
+                //Console.WriteLine("i: " + i + " / " + (matrices.Length - 1));
+                //Console.WriteLine("error length: " + output_error.Length);
+                _error = MatrixTools.MultiplyVI(output_error, GetLearningRate());
+
+                tmp = MatrixTools.SubtractFV(1, next_output);
+
+                tmp = MatrixTools.MultiplyVV(_error, next_output, tmp);
+
+                d = MatrixTools.MultiplyVVAsMatrix(tmp, prev_output);
+
+                output_error = MatrixTools.MultiplyMV(MatrixTools.TransposeM(matrices[i]), _error);
+
+                if(i > 0)
+                PutErrors(incoming_vectors_keys[i], output_error);
+                
+                //Console.WriteLine("new error length:"+ output_error.Length);
+
+                matrices[i] = MatrixTools.AddMM(matrices[i], d);
+            }
+        }
 
         protected float[] ActivationFunction(float[] vector)
         {
-            return vector;
-            /*for(int i = 0; i < vector.Length; i++)
+            for(int i = 0; i < vector.Length; i++)
                 vector[i] = Sigmoid(vector[i]);
-            return vector;*/
+            return vector;
         }
 
         protected float Sigmoid(float f)

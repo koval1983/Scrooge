@@ -54,8 +54,8 @@ namespace Scrooge
 
         public static float GetRandomMatrixValue()
         {
-            //return ((float)Network.rand.Next(1, 4999999) / 10000000 - 0.5f) * (Network.rand.Next(0, 2) == 0 ? 1 : -1);
-            return ((float)Network.rand.Next(1, 49) / 100 - 0.5f) * (Network.rand.Next(0, 2) == 0 ? 1 : -1);
+            return ((float)Network.rand.Next(1, 4999999) / 10000000 - 0.5f) * (Network.rand.Next(0, 2) == 0 ? 1 : -1);
+            //return ((float)Network.rand.Next(1, 49) / 100 - 0.5f) * (Network.rand.Next(0, 2) == 0 ? 1 : -1);
         }
 
         public static float[] AddVI(float[] v, float n)
@@ -74,6 +74,18 @@ namespace Scrooge
             return r;
         }
 
+        public static float[] MultiplyVV(float[] v1, float[] v2, float[] v3)
+        {
+            /*Console.WriteLine("v1: "+ v1.Length);
+            Console.WriteLine("v2: "+ v2.Length);
+            Console.WriteLine("v3: "+ v3.Length);
+            Console.WriteLine("==================================");*/
+            float[] r = new float[v1.Length];
+            for (int i = 0; i < v1.Length; i++)
+                r[i] = v1[i] * v2[i] * v3[i];
+            return r;
+        }
+
         public static float[] MultiplyVI(float[] v, float n)
         {
             float[] res = new float[v.Length];
@@ -84,6 +96,10 @@ namespace Scrooge
         
         public static float[] MultiplyMV(float[,] matrix, float[] vector)
         {
+            /*Console.WriteLine("M "+ matrix.GetLength(0) + " x "+ matrix.GetLength(1));
+            Console.WriteLine("V "+ vector.Length);
+            Console.WriteLine("=========");*/
+
             int rows = matrix.GetLength(0), cols = matrix.GetLength(1);
             float[] result = new float[rows];
 
@@ -98,11 +114,19 @@ namespace Scrooge
             return result;
         }
 
-        public static float[] SubstractVV(float[] v1, float[] v2)
+        public static float[] SubtractVV(float[] v1, float[] v2)
         {
             float[] r = new float[v1.Length];
             for (int i = 0; i < v1.Length; i++)
                 r[i] = v1[i] - v2[i];
+            return r;
+        }
+
+        public static float[] SubtractFV(float f, float[] v)
+        {
+            float[] r = new float[v.Length];
+            for (int i = 0; i < v.Length; i++)
+                r[i] = f - v[i];
             return r;
         }
 
