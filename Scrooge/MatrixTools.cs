@@ -19,6 +19,45 @@ namespace Scrooge
             
         }
 
+        public static float[,] FillRandomMatrix(int rows, int cols)
+        {
+            float[,] m = new float[rows, cols];
+
+            for (int r = 0; r < rows; r++)
+                for (int c = 0; c < cols; c++)
+                    m[r, c] = GetRandomMatrixValue();
+
+                    return m;
+        }
+
+        public static float[,] FillRandomMatrix(List<int> layer, int[] incoming_keys, List<int>[] links_from)
+        {
+            float[,] m = new float[layer.Count, incoming_keys.Length];
+            int from, to;
+            for (int row = 0; row < layer.Count; row++)
+            {
+                from = layer[row];
+
+                for (int column = 0; column < incoming_keys.Length; column++)
+                {
+                    to = incoming_keys[column];
+
+                    if (links_from[from].IndexOf(to) == -1)
+                        m[row, column] = 0;
+                    else
+                        m[row, column] = GetRandomMatrixValue();
+                }
+            }
+            
+            return m;
+        }
+
+        public static float GetRandomMatrixValue()
+        {
+            //return ((float)Network.rand.Next(1, 4999999) / 10000000 - 0.5f) * (Network.rand.Next(0, 2) == 0 ? 1 : -1);
+            return ((float)Network.rand.Next(1, 49) / 100 - 0.5f) * (Network.rand.Next(0, 2) == 0 ? 1 : -1);
+        }
+
         public static float[] AddVI(float[] v, float n)
         {
             float[] res = new float[v.Length];
@@ -151,228 +190,44 @@ namespace Scrooge
 
             return res;
         }
-    }
 
-    class MatrixMultShared
-    {
-        private const int BlockSize = 32;
-
-        private static float GetMatrixElement(float[,] matrix, int blockRow, int blockCol, int row, int col)
+        public static string Vector2Str(int[] v)
         {
-            var globalRow = blockRow * BlockSize + row;
-            var globalCol = blockCol * BlockSize + col;
-            if (globalRow < matrix.GetLength(0) && globalCol < matrix.GetLength(1))
-                return matrix[globalRow, globalCol];
-            else
-                return 0.0f;
+            string s = "VECTOR "+ v.Length +"\n";
+
+            foreach (int i in v)
+                s += "| "+ i +" |\n";
+
+            return s;
         }
 
-        private static float GetMatrixElement(int ld, float[] matrix, int blockRow, int blockCol, int row, int col)
+        public static string Vector2String(float[] v)
         {
-            var globalRow = blockRow * BlockSize + row;
-            var globalCol = blockCol * BlockSize + col;
-            var globalIdx = globalRow * ld + globalCol;
-            if (globalIdx < matrix.Length)
-                return matrix[globalIdx];
-            else
-                return 0.0f;
+            string s = "VECTOR " + v.Length + "\n";
+
+            foreach (float i in v)
+                s += "| " + i + " |\n";
+
+            return s;
         }
 
-        private static void SetMatrixElement(float[,] matrix, int blockRow, int blockCol, int row, int col, float value)
+        public static string Matrix2String(float[,] m)
         {
-            var globalRow = blockRow * BlockSize + row;
-            var globalCol = blockCol * BlockSize + col;
-            if (globalRow < matrix.GetLength(0) && globalCol < matrix.GetLength(1))
-                matrix[globalRow, globalCol] = value;
-        }
+            string s = "MATRIX " + m.GetLength(0) + "X" + m.GetLength(1) + "\n";
 
-        private static void SetMatrixElement(int ld, float[] matrix, int blockRow, int blockCol, int row, int col,
-            float value)
-        {
-            var globalRow = blockRow * BlockSize + row;
-            var globalCol = blockCol * BlockSize + col;
-            var globalIdx = globalRow * ld + globalCol;
-            if (globalIdx < matrix.Length)
-                matrix[globalIdx] = value;
-        }
-
-        private static int DivUp(int num, int den)
-        {
-            return (num + den - 1) / den;
-        }
-
-        private static void Kernel(float[,] a, float[,] b, float[,] c)
-        {
-            var colsA = a.GetLength(1);
-            var blockRow = blockIdx.x;
-            var blockCol = blockIdx.y;
-
-            var valueC = 0.0f;
-
-            var row = threadIdx.x;
-            var col = threadIdx.y;
-
-            for (var m = 0; m < DivUp(colsA, BlockSize); ++m)
+            for (int r = 0; r < m.GetLength(0); r++)
             {
-                var subA = __shared__.Array2D<float>(BlockSize, BlockSize);
-                var subB = __shared__.Array2D<float>(BlockSize, BlockSize);
-
-                subA[row, col] = GetMatrixElement(a, blockRow, m, row, col);
-                subB[row, col] = GetMatrixElement(b, m, blockCol, row, col);
-                DeviceFunction.SyncThreads();
-
-                for (var e = 0; e < BlockSize; ++e)
+                s += "| ";
+                for (int c = 0; c < m.GetLength(1); c++)
                 {
-                    valueC += subA[row, e] * subB[e, col];
+                    if (m[r, c] >= 0)
+                        s += " ";
+                    s += Math.Round(m[r, c], 2) + "\t";
                 }
-                DeviceFunction.SyncThreads();
+                s += "|\n";
             }
 
-            SetMatrixElement(c, blockRow, blockCol, row, col, valueC);
-        }
-
-        private static void KernelPacked(float[] a, float[] b, float[] c, int colsA, int colsB, int colsC)
-        {
-            var blockRow = blockIdx.x;
-            var blockCol = blockIdx.y;
-
-            float valueC = 0.0f;
-
-            var row = threadIdx.x;
-            var col = threadIdx.y;
-
-            for (var m = 0; m < DivUp(colsA, BlockSize); ++m)
-            {
-                var subA = __shared__.Array2D<float>(BlockSize, BlockSize);
-                var subB = __shared__.Array2D<float>(BlockSize, BlockSize);
-
-                subA[row, col] = GetMatrixElement(colsA, a, blockRow, m, row, col);
-                subB[row, col] = GetMatrixElement(colsB, b, m, blockCol, row, col);
-                DeviceFunction.SyncThreads();
-
-                for (var e = 0; e < BlockSize; ++e)
-                {
-                    valueC += subA[row, e] * subB[e, col];
-                }
-                DeviceFunction.SyncThreads();
-            }
-
-            SetMatrixElement(colsC, c, blockRow, blockCol, row, col, valueC);
-        }
-
-        /*[GpuManaged]
-        public static void RunGpuPacked(float[,] a, float[,] b, float[,] c)
-        {
-            var lp = LaunchParam(a, b, c);
-            var aFlat = Pack(a);
-            var bFlat = Pack(b);
-            var cFlat = new float[c.Length];
-            Gpu.Default.Launch(KernelPacked, lp, aFlat, bFlat, cFlat, a.GetLength(1), b.GetLength(1), c.GetLength(1));
-            Unpack(cFlat, c);
-        }*/
-
-        [GpuManaged]
-        public static void RunGpu(float[,] a, float[,] b, float[,] c)
-        {
-            var lp = LaunchParam(a, b, c);
-            Gpu.Default.Launch(Kernel, lp, a, b, c);
-        }
-
-        public static void RunCpu(float[,] a, float[,] b, float[,] c)
-        {
-            for (var row = 0; row < c.GetLength(0); ++row)
-            {
-                for (var col = 0; col < c.GetLength(1); ++col)
-                {
-                    float sum = 0.0f;
-                    for (var k = 0; k < a.GetLength(1); ++k)
-                    {
-                        sum += a[row, k] * b[k, col];
-                    }
-                    c[row, col] = sum;
-                }
-            }
-        }
-
-        private static LaunchParam LaunchParam(float[,] a, float[,] b, float[,] c)
-        {
-            Check(a, b, c);
-            var blockSize = new dim3(BlockSize, BlockSize);
-            var gridSize = new dim3(DivUp(a.GetLength(0), BlockSize), DivUp(b.GetLength(1), BlockSize));
-            return new LaunchParam(gridSize, blockSize);
-        }
-
-        private static float[] Pack(float[,] a)
-        {
-            var flat = new float[a.Length];
-            var rows = a.GetLength(0);
-            var cols = a.GetLength(1);
-            for (var i = 0; i < rows; i++)
-                for (var j = 0; j < cols; j++)
-                    flat[i * cols + j] = a[i, j];
-            return flat;
-        }
-
-        [GpuManaged]
-        private static void Unpack(float[] aFlat, float[,] a)
-        {
-            var rows = a.GetLength(0);
-            var cols = a.GetLength(1);
-            for (var i = 0; i < rows; i++)
-                for (var j = 0; j < cols; j++)
-                    a[i, j] = aFlat[i * cols + j];
-        }
-
-        private static void Check(float[,] a, float[,] b, float[,] c)
-        {
-            if (a == null) throw new ArgumentNullException(nameof(a));
-            if (b == null) throw new ArgumentNullException(nameof(b));
-            if (c == null) throw new ArgumentNullException(nameof(c));
-            Debug.Assert(a.GetLength(1) == b.GetLength(0));
-            Debug.Assert(a.GetLength(0) == c.GetLength(0));
-            Debug.Assert(b.GetLength(1) == c.GetLength(1));
+            return s;
         }
     }
-
-    /*class MatrixMultSharedTest
-    {
-        static readonly Random rng = new Random(42);
-
-        public static float[,] RandomMatrix(int rows, int cols)
-        {
-            var a = new float[rows, cols];
-            for (var i = 0; i < rows; ++i)
-                for (var j = 0; j < cols; ++j)
-                    a[i, j] = rng.Nextfloat();
-            return a;
-        }
-
-        private static void Run(int n, float tolerance)
-        {
-            var a = RandomMatrix(n, n);
-            var b = RandomMatrix(n, n);
-            var c = new float[n, n];
-
-            MatrixMultShared.RunCpu(a, b, c);
-
-            var cGpu = new float[n, n];
-            MatrixMultShared.RunGpu(a, b, cGpu);
-            Assert.That(cGpu, Is.EqualTo(c).Within(tolerance));
-
-            var cGpuPacked = new float[n, n];
-            MatrixMultShared.RunGpuPacked(a, b, cGpuPacked);
-            Assert.That(cGpuPacked, Is.EqualTo(c).Within(tolerance));
-        }
-
-        [GpuManaged, Test]
-        public static void Small()
-        {
-            Run(128, 1e-4);
-        }
-
-        public static void Large()
-        {
-            Run(1024, 1e-4);
-        }
-    }*/
 }

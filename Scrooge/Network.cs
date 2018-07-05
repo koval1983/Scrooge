@@ -11,58 +11,43 @@ namespace Scrooge
     class Network : IComparable
     {
         private static int last_id = 0;
-        private static Random rand = new Random();
+        public static readonly Random rand = new Random();
         private static readonly int relation_degree = 1;
-        private static readonly int input_layer_size = 10;
+        private static readonly int input_layer_size = 3;
         private static readonly int output_layer_size = 3;
 
         private readonly int id;
+        private int[][] parents = new int[0][];
         public readonly int[][] DNA;
         private float score;
 
-        private int[][] parents = new int[0][];
-        private float[][,] matrices;
-        private float[][] values;//тут лежат значения каждого нейрона (после функции активации)
-        private int[][] vectors_keys;
-        
-        /*private static int max_input_layer_size = 20;
-        private static int max_layer_size = 150;
-        private static int min_layer_size = 3;
-        private static readonly int output_layer_size = 3;*/
+        private float[] input;
+        private float[] values;//тут лежат значения каждого нейрона (после функции активации)
+        private float[] output;
 
-        /*public static int GetInputLayerSize()
-        {
-            return layers[0];
-        }*/
+        private float[][,] matrices;
+        private int [][] incoming_vectors_keys;//"входящие" векторы. weights_matrice x incoming_vector = layer_input
+        private List<int>[] layers;//слои - массив (номер слоя -> массив с номерами нейронов)
         
         public Network(int dna_length)
         {
             id = ++last_id;
             DNA = GetRandomDNA(dna_length);
-            MakeQueue();
-            //Console.WriteLine(Dna2Str(DNA));
         }
         
         public Network(int[][] dna, Network parent1, Network parent2)
         {
             id = ++last_id;
             DNA = dna;
-            MakeQueue();
+            
             SetNewParents(parent1, parent2);
         }
-
-        protected float[][,] GetMatrices()
+        
+        private void MakeMatricesAndVectors()
         {
-            if(matrices == null)
-            {
-                
-            }
-            
-            return matrices;
-        }
+            if (values != null)
+                return;
 
-        private void MakeQueue()
-        {
             int[]  queue           = new int[DNA.Length];       //порядок обработки нейронов, номер нода -> номер очереди
             byte[] map_outputs     = new byte[DNA.Length];      //здесь отмечаем нейроны которые соединяются с последним слоем
             List<int>[] links_from = new List<int>[DNA.Length]; //здесь ДНК наоборот - номер нейрона -> список с номерами "входящих" связей
@@ -86,18 +71,18 @@ namespace Scrooge
                         links_from[node_link_to] = new List<int>();
 
                     links_from[node_link_to].Add(current_node);
-
                     
                     queue[node_link_to] = Math.Max(queue[node_link_to], current_node_level + 1);
+
                     max_level = Math.Max(queue[node_link_to], max_level);
+
                     is_output = false;
                 }
 
                 map_outputs[current_node] = (byte) (is_output? 1 : 0);
             }
-
-
-            List<int>[] layers = new List<int>[max_level + 1];//слои - массив (номер слоя -> массив с номерами нейронов)
+            
+            layers = new List<int>[max_level + 1];
 
             for (int i = 0; i < queue.Length; i++)
             {
@@ -108,80 +93,57 @@ namespace Scrooge
             }
 
             //строим векторы и матрицы
-            for (int i = 0; i < queue.Length; i++)
-            {
+            List<int> vecOutKeys = new List<int>();
 
-            }
+            matrices = new float[layers.Length + 1][,];
+            incoming_vectors_keys = new int[layers.Length + 1][];
 
-            /*Console.WriteLine(Dna2Str(DNA));
-
-            string res = "queue   [ ";
-
-            for (int j = 0; j < queue.Length; j++)
-            {
-                res += queue[j] + " ";
-            }
-
-                res += "] ";
-
-                Console.WriteLine(res);
-
-            res = "outputs [ ";
-
-            for (int j = 0; j < map_outputs.Length; j++)
-            {
-                res += map_outputs[j] + " ";
-            }
-
-            res += "] ";
-
-            Console.WriteLine(res);
+            matrices[0] = MatrixTools.FillRandomMatrix(layers[0].Count, input_layer_size);//матрица между Vi и Vh0
             
-            res = "links_from [ ";
-
-            for (int i = 0; i < links_from.Length; i++)
+            for (int layer = 1; layer < layers.Length; layer++)
             {
-                res += " [ ";
+                incoming_vectors_keys[layer] = GetLayerIncomeKeys(layers[layer], links_from);
 
-                if(links_from[i] != null)
-                {
-                    for (int j = 0; j < links_from[i].Count; j++)
-                    {
-                        res += links_from[i][j] + " ";
-                    }
-                }
-
-
-                res += "] ";
+                matrices[layer] = MatrixTools.FillRandomMatrix(layers[layer], incoming_vectors_keys[layer], links_from);
             }
 
-            res += "]";
+            incoming_vectors_keys[incoming_vectors_keys.Length - 1] = GetOutputKeys(map_outputs);
+            matrices[matrices.Length - 1] = MatrixTools.FillRandomMatrix(output_layer_size, incoming_vectors_keys[incoming_vectors_keys.Length - 1].Length);
 
-            Console.WriteLine(res);
+            input  = new float[input_layer_size];
+            values = new float[DNA.Length];
+            output = new float[output_layer_size];
+        }
 
-            res = "layers [ ";
+        protected int[] GetOutputKeys(byte[] map)
+        {
+            List<int> keys = new List<int>();
 
-            for (int i = 0; i < layers.Length; i++)
+            for (int i = 0; i < map.Length; i++)
             {
-                res += " [ ";
-
-                if (layers[i] != null)
-                {
-                    for (int j = 0; j < layers[i].Count; j++)
-                    {
-                        res += layers[i][j] + " ";
-                    }
-                }
-
-
-                res += "] ";
+                if (map[i] == 1)
+                    keys.Add(i);
             }
 
-            res += "]";
+            return keys.ToArray<int>();
+        }
 
-            Console.WriteLine(res);
+        protected int[] GetLayerIncomeKeys(List<int> Layer, List<int>[] links_from)
+        {
+            List<int> list = new List<int>();
+            
+            int Neuron;
+            for (int neuron = 0; neuron < Layer.Count; neuron++)
+            {
+                Neuron = Layer[neuron];
 
-            Console.ReadKey(true);*/
+                for (int i = 0; i < links_from[Neuron].Count; i++)
+                {
+                    list.Add(links_from[Neuron][i]);
+                }
+            }
+
+            return list.Distinct().ToArray<int>();
         }
 
         public bool IsRelated(Network other)
@@ -329,27 +291,6 @@ namespace Scrooge
 
             return score;
         }
-        
-        public string Dna2Str(int[][] dna)
-        {
-            string res = " [ ";
-            
-            for (int i = 0; i < dna.Length; i++)
-            {
-                res += " [ ";
-                
-                for (int j = 0; j < dna[i].Length; j++)
-                {
-                    res += dna[i][j] + " ";
-                }
-                
-                res += "] ";
-            }
-            
-            res += "]";
-            
-            return res;
-        }
 
         public int CompareTo(Object other)
         {
@@ -363,21 +304,47 @@ namespace Scrooge
                 return 0;
         }
 
-        protected float[][] inputs, outputs;
-
-        public float[] Query(float[] input)
+        public float[] GetVector(int[] keys)
         {
-            float[][,] matrices = GetMatrices();
-            inputs[0] = input;
-            outputs[0] = input;
+            float[] v = new float[keys.Length];
 
-            for (int i = 0; i < matrices.Length; i++)
+            for (int i = 0; i < v.Length; i++)
+                v[i] = values[keys[i]];
+
+            return v;
+        }
+
+        public void SetVector(List<int> keys, float[] values)
+        {
+            Console.WriteLine(MatrixTools.Vector2Str(keys.ToArray<int>()));
+            Console.WriteLine(MatrixTools.Vector2Str(this.values));
+            for (int i = 0; i < values.Length; i++)
+                this.values[keys[i]] = values[i];
+            Console.WriteLine(MatrixTools.Vector2Str(this.values));
+        }
+
+        public float[] Query(float[] _input)
+        {
+            MakeMatricesAndVectors();
+
+            this.input = _input;
+
+            float[] Input = MatrixTools.MultiplyMV(matrices[0], _input);//умножаем матрицу 0 на вектор входящего сигнала, получаем инпут слоя 1
+            float[] Output = ActivationFunction(Input);//применяем функцию активации к инпуту слоя 1, получаем аутпут слоя 1
+
+            SetVector(layers[0], Output);//записываем значения первого слоя
+
+            for (int l = 1; l < layers.Length; l++)
             {
-                inputs[i + 1] = MatrixTools.MultiplyMV(matrices[i], outputs[i]);
-                outputs[i + 1] = ActivationFunction(inputs[i + 1]);
+                Input = MatrixTools.MultiplyMV(matrices[l], GetVector(incoming_vectors_keys[l]));
+                Output = ActivationFunction(Input);
+
+                SetVector(layers[l], Output);
             }
 
-            return outputs[outputs.Length - 1];
+            Input = MatrixTools.MultiplyMV(matrices[matrices.Length - 1], GetVector(incoming_vectors_keys[incoming_vectors_keys.Length - 1]));
+
+            return output = ActivationFunction(Input);
         }
 
         public float GetLearningRate()
@@ -385,10 +352,10 @@ namespace Scrooge
             return 0.15f;
         }
 
-        public float[] Train(float[] target, float[] input)
+        /*public float[] Train(float[] target, float[] input)
         {
             float[] answer = Query(input);
-            float[][,] matrices = GetMatrices();
+            //float[][,] matrices = GetMatrices();
             float[]    error    = MatrixTools.SubstractVV(target, answer);
 
             float[] minus_e, derivative, vector_one;
@@ -410,18 +377,148 @@ namespace Scrooge
             }
 
             return answer;
-        }
+        }*/
 
         protected float[] ActivationFunction(float[] vector)
         {
-            for(int i = 0; i < vector.Length; i++)
-                vector[i] = Sigmoid(vector[i]);
             return vector;
+            /*for(int i = 0; i < vector.Length; i++)
+                vector[i] = Sigmoid(vector[i]);
+            return vector;*/
         }
 
         protected float Sigmoid(float f)
         {
             return 1.0f / (1.0f + (float)Math.Exp(-f));
+        }
+
+        override public string ToString()
+        {
+            MakeMatricesAndVectors();
+
+            string s = "Network #" + id + "\n";
+
+            s += DnaStr();
+            s += LayersStr();
+            s += LayersValuesStr();
+            s += LayersKeysStr();
+            s += MatricesAndVectorsStr();
+
+            for (int i = 0; i < matrices.Length; i++)
+            {
+                s += MatrixTools.Matrix2String(matrices[i]);
+
+                /*if(i >= 1)
+                    s += MatrixTools.Vector2String(layers[i].ToArray());*/
+            }
+
+            return s;
+        }
+
+        public string LayersKeysStr()
+        {
+            string str = "KEYS:===============================================================\n";
+
+            for (int l = 0; l < incoming_vectors_keys.Length; l++)
+            {
+                str += l.ToString();
+
+                //if (l == 0) continue;
+                
+                str += "| ";
+
+                if(incoming_vectors_keys[l] != null)
+                    foreach (int k in incoming_vectors_keys[l])
+                        str += k + " ";
+
+                str += "\n";
+            }
+
+            return str;
+        }
+
+        public string MatricesAndVectorsStr()
+        {
+            string s = "MATRICES & VECTORS:=================================================\n";
+
+            return s;
+        }
+        public string LayersValuesStr()
+        {
+            if (layers == null)
+                return "";
+
+            string str = "VALUES:=============================================================\n";
+
+            int max_len = (layers.Length - 1).ToString().Length + 1;
+
+            for (int l = 0; l < layers.Length; l++)
+            {
+                str += l.ToString();
+
+                for (int i = l.ToString().Length; i < max_len; i++)
+                    str += " ";
+
+                str += "| ";
+
+                foreach (int w in layers[l])
+                    str += values[w] + " ";
+                
+                str += "\n";
+            }
+
+            return str;
+        }
+        public string LayersStr()
+        {
+            if (layers == null)
+                return "";
+
+            string str = "LAYERS:=============================================================\n";
+
+            int max_len = (layers.Length - 1).ToString().Length + 1;
+
+            for (int l = 0; l < layers.Length; l++)
+            {
+                str += l.ToString();
+
+                for (int i = l.ToString().Length; i < max_len; i++)
+                    str += " ";
+
+                str += "| ";
+
+                foreach(int w in layers[l])
+                    str += w +" ";
+
+                str += "\n";
+            }
+
+            return str;
+        }
+        public string DnaStr()
+        {
+            string str = "DNA:================================================================\n";
+
+            int max_len = (DNA.Length - 1).ToString().Length + 1;
+
+            for (int neuron = 0; neuron < DNA.Length; neuron++)
+            {
+                str += neuron.ToString();
+
+                for (int i = neuron.ToString().Length; i < max_len; i++)
+                    str += " ";
+
+                str += "| ";
+
+                for (int link_to = 0; link_to < DNA[neuron].Length; link_to++)
+                {
+                    str += DNA[neuron][link_to] +" ";
+                }
+
+                str += "\n";
+            }
+            
+            return str;
         }
     }
 }
