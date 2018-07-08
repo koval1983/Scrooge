@@ -13,7 +13,7 @@ namespace Scrooge
         private static int last_id = 0;
         public static readonly Random rand = new Random();
         private static readonly int relation_degree = 1;
-        private static readonly int input_layer_size = 3;
+        private static readonly int input_layer_size = 25;
         private static readonly int output_layer_size = 3;
 
         private readonly int id;
@@ -44,78 +44,6 @@ namespace Scrooge
         public Network(int[][] dna, Network parent1, Network parent2) : this(dna)
         {
             SetNewParents(parent1, parent2);
-        }
-        
-        private void MakeMatricesAndVectors()
-        {
-            if (values != null)
-                return;
-
-            int[]  queue           = new int[DNA.Length];       //порядок обработки нейронов, номер нода -> номер очереди
-            byte[] map_outputs     = new byte[DNA.Length];      //здесь отмечаем нейроны которые соединяются с последним слоем
-            List<int>[] links_from = new List<int>[DNA.Length]; //здесь ДНК наоборот - номер нейрона -> список с номерами "входящих" связей
-            
-            int node_link_to, current_node_level, max_level = 0;
-            bool is_output;
-            for (int current_node = 0; current_node < DNA.Length; current_node++)
-            {
-                current_node_level = queue[current_node];
-                
-                is_output = true;
-                
-                for (int i = 0; i < DNA[current_node].Length; i++)
-                {
-                    node_link_to = current_node + DNA[current_node][i];
-
-                    if (node_link_to >= DNA.Length)
-                        continue;
-
-                    if (links_from[node_link_to] == null)
-                        links_from[node_link_to] = new List<int>();
-
-                    links_from[node_link_to].Add(current_node);
-                    
-                    queue[node_link_to] = Math.Max(queue[node_link_to], current_node_level + 1);
-
-                    max_level = Math.Max(queue[node_link_to], max_level);
-
-                    is_output = false;
-                }
-
-                map_outputs[current_node] = (byte) (is_output? 1 : 0);
-            }
-            
-            layers = new List<int>[max_level + 1];
-
-            for (int i = 0; i < queue.Length; i++)
-            {
-                if (layers[queue[i]] == null)
-                    layers[queue[i]] = new List<int>();
-
-                layers[queue[i]].Add(i);
-            }
-
-            //строим векторы и матрицы
-            List<int> vecOutKeys = new List<int>();
-
-            matrices = new float[layers.Length + 1][,];
-            incoming_vectors_keys = new int[layers.Length + 1][];
-
-            matrices[0] = MatrixTools.FillRandomMatrix(layers[0].Count, input_layer_size);//матрица между Vi и Vh0
-            
-            for (int layer = 1; layer < layers.Length; layer++)
-            {
-                incoming_vectors_keys[layer] = GetLayerIncomeKeys(layers[layer], links_from);
-
-                matrices[layer] = MatrixTools.FillRandomMatrix(layers[layer], incoming_vectors_keys[layer], links_from);
-            }
-
-            incoming_vectors_keys[incoming_vectors_keys.Length - 1] = GetOutputKeys(map_outputs);
-            matrices[matrices.Length - 1] = MatrixTools.FillRandomMatrix(output_layer_size, incoming_vectors_keys[incoming_vectors_keys.Length - 1].Length);
-
-            input  = new float[input_layer_size];
-            values = new float[DNA.Length];
-            output = new float[output_layer_size];
         }
 
         protected int[] GetOutputKeys(byte[] map)
@@ -280,6 +208,78 @@ namespace Scrooge
             }
         }
 
+        private void MakeMatricesAndVectors()
+        {
+            if (values != null)
+                return;
+
+            int[] queue = new int[DNA.Length];       //порядок обработки нейронов, номер нода -> номер очереди
+            byte[] map_outputs = new byte[DNA.Length];      //здесь отмечаем нейроны которые соединяются с последним слоем
+            List<int>[] links_from = new List<int>[DNA.Length]; //здесь ДНК наоборот - номер нейрона -> список с номерами "входящих" связей
+
+            int node_link_to, current_node_level, max_level = 0;
+            bool is_output;
+            for (int current_node = 0; current_node < DNA.Length; current_node++)
+            {
+                current_node_level = queue[current_node];
+
+                is_output = true;
+
+                for (int i = 0; i < DNA[current_node].Length; i++)
+                {
+                    node_link_to = current_node + DNA[current_node][i];
+
+                    if (node_link_to >= DNA.Length)
+                        continue;
+
+                    if (links_from[node_link_to] == null)
+                        links_from[node_link_to] = new List<int>();
+
+                    links_from[node_link_to].Add(current_node);
+
+                    queue[node_link_to] = Math.Max(queue[node_link_to], current_node_level + 1);
+
+                    max_level = Math.Max(queue[node_link_to], max_level);
+
+                    is_output = false;
+                }
+
+                map_outputs[current_node] = (byte)(is_output ? 1 : 0);
+            }
+
+            layers = new List<int>[max_level + 1];
+
+            for (int i = 0; i < queue.Length; i++)
+            {
+                if (layers[queue[i]] == null)
+                    layers[queue[i]] = new List<int>();
+
+                layers[queue[i]].Add(i);
+            }
+
+            //строим векторы и матрицы
+            List<int> vecOutKeys = new List<int>();
+
+            matrices = new float[layers.Length + 1][,];
+            incoming_vectors_keys = new int[layers.Length + 1][];
+
+            matrices[0] = MatrixTools.FillRandomMatrix(layers[0].Count, input_layer_size);//матрица между Vi и Vh0
+
+            for (int layer = 1; layer < layers.Length; layer++)
+            {
+                incoming_vectors_keys[layer] = GetLayerIncomeKeys(layers[layer], links_from);
+
+                matrices[layer] = MatrixTools.FillRandomMatrix(layers[layer], incoming_vectors_keys[layer], links_from);
+            }
+
+            incoming_vectors_keys[incoming_vectors_keys.Length - 1] = GetOutputKeys(map_outputs);
+            matrices[matrices.Length - 1] = MatrixTools.FillRandomMatrix(output_layer_size, incoming_vectors_keys[incoming_vectors_keys.Length - 1].Length);
+
+            input = new float[input_layer_size];
+            values = new float[DNA.Length];
+            output = new float[output_layer_size];
+        }
+
         private bool need_to_test = true;
         public float GetScore()
         {
@@ -287,9 +287,18 @@ namespace Scrooge
             {
                 need_to_test = false;
 
-                NetworkTest nt = new NetworkTest(this);
+                MakeMatricesAndVectors();
 
-                score = nt.Do();
+                NetworkTest nt = new NetworkTest();
+
+                score = nt.Do(this);
+
+                input = null;
+                values = null;
+                output = null;
+                matrices = null;
+                incoming_vectors_keys = null;
+                layers = null;
             }
 
             return score;
@@ -325,8 +334,6 @@ namespace Scrooge
 
         public float[] Query(float[] _input)
         {
-            MakeMatricesAndVectors();
-
             this.input = _input;
 
             float[] Input = MatrixTools.MultiplyMV(matrices[0], _input);//умножаем матрицу 0 на вектор входящего сигнала, получаем инпут слоя 1
@@ -336,6 +343,7 @@ namespace Scrooge
 
             for (int l = 1; l < layers.Length; l++)
             {
+                //Console.WriteLine(MatrixTools.Matrix2String(matrices[l]));
                 Input = MatrixTools.MultiplyMV(matrices[l], GetVector(incoming_vectors_keys[l]));
                 Output = ActivationFunction(Input);
 
@@ -349,40 +357,20 @@ namespace Scrooge
 
         public float GetLearningRate()
         {
-            return 0.5f;
+            return 0.999f;
         }
-
-        /*public void _Train(float[] expected_output)
+        
+        protected void PutErrors(int[] keys, float[] _values)
         {
-            float[] error = MatrixTools.SubtractVV(expected_output, output);
-
-            float[] minus_e, derivative, vector_one;
-            float[,] weights_delta;
-
-            float[] _output = output;
-
-            for (int i = matrices.Length - 1; i >= 0; i--)
+            for (int i = 0; i < _values.Length; i++)
             {
-                derivative = MatrixTools.MultiplyVV(outputs[i + 1], MatrixTools.AddVI(MatrixTools.MultiplyVI(outputs[i + 1], -1), 1));
+                errors[keys[i]] += _values[i];
 
-                minus_e = MatrixTools.MultiplyVI(error, 1 * GetLearningRate());
-
-                vector_one = MatrixTools.MultiplyVV(derivative, minus_e);
-
-                weights_delta = MatrixTools.MultiplyVVAsMatrix(vector_one, outputs[i]);
-
-                error = MatrixTools.MultiplyMV(MatrixTools.TransposeM(matrices[i]), error);
-
-                matrices[i] = MatrixTools.AddMM(matrices[i], weights_delta);
+                if (float.IsPositiveInfinity(errors[keys[i]]))
+                    errors[keys[i]] = Single.MaxValue;
+                else if(float.IsNegativeInfinity(errors[keys[i]]))
+                    errors[keys[i]] = Single.MinValue;
             }
-        }*/
-
-        protected void PutErrors(int[] keys, float[] values)
-        {
-            //Console.WriteLine("keys " + keys.Length);
-            //Console.WriteLine("values " + values.Length);
-            for (int i = 0; i < values.Length; i++)
-                errors[keys[i]] += values[i];
         }
 
         protected float[] GetErrors(List<int> keys)
@@ -390,8 +378,22 @@ namespace Scrooge
             float[] e = new float[keys.Count];
 
             for (int i = 0; i < e.Length; i++)
+            {
                 e[i] = errors[keys[i]];
 
+                if (float.IsNaN(errors[keys[i]]))
+                {
+                    Console.WriteLine("NaN is gotten");
+                    Console.WriteLine(errors[keys[i]]);
+                    Console.ReadKey();
+                }
+                if (float.IsInfinity(errors[keys[i]]))
+                {
+                    Console.WriteLine("Infinity is gotten");
+                    Console.WriteLine(errors[keys[i]]);
+                    Console.ReadKey();
+                }
+            }
             return e;
         }
 
@@ -410,6 +412,10 @@ namespace Scrooge
                 {
                     next_output = output;
                     output_error = MatrixTools.SubtractVV(expected_output, output);
+                    /*Console.WriteLine("=====================================================================");
+                    Console.WriteLine("expected_output: " + MatrixTools.Vector2Str(expected_output));
+                    Console.WriteLine("output: " + MatrixTools.Vector2Str(output));
+                    Console.WriteLine("output_error: " + MatrixTools.Vector2Str(output_error));*/
                 }
                 else
                 {
@@ -425,24 +431,20 @@ namespace Scrooge
                 {
                     prev_output = GetVector(incoming_vectors_keys[i]);
                 }
-
-                //Console.WriteLine("i: " + i + " / " + (matrices.Length - 1));
-                //Console.WriteLine("error length: " + output_error.Length);
+                
                 _error = MatrixTools.MultiplyVI(output_error, GetLearningRate());
-
+                
                 tmp = MatrixTools.SubtractFV(1, next_output);
-
+                
                 tmp = MatrixTools.MultiplyVV(_error, next_output, tmp);
-
                 d = MatrixTools.MultiplyVVAsMatrix(tmp, prev_output);
 
+                
                 output_error = MatrixTools.MultiplyMV(MatrixTools.TransposeM(matrices[i]), _error);
 
-                if(i > 0)
-                PutErrors(incoming_vectors_keys[i], output_error);
+                if (i > 0)
+                    PutErrors(incoming_vectors_keys[i], output_error);
                 
-                //Console.WriteLine("new error length:"+ output_error.Length);
-
                 matrices[i] = MatrixTools.AddMM(matrices[i], d);
             }
         }
@@ -461,8 +463,6 @@ namespace Scrooge
 
         override public string ToString()
         {
-            MakeMatricesAndVectors();
-
             string s = "Network #" + id + "\n";
 
             s += DnaStr();

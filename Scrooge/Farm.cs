@@ -142,10 +142,10 @@ namespace Scrooge
         public Network[] GetFirstGeneration(int size)
         {
             Network[] g = new Network[size];
-
-            for (int i = 0; i < size; i++)
-                g[i] = new Network(7);
-
+            
+            for (int i = 0; i < g.Length; i++)
+                g[i] = new Network(100);
+            
             return g;
         }
     }

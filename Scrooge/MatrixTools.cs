@@ -54,8 +54,8 @@ namespace Scrooge
 
         public static float GetRandomMatrixValue()
         {
-            return ((float)Network.rand.Next(1, 4999999) / 10000000 - 0.5f) * (Network.rand.Next(0, 2) == 0 ? 1 : -1);
-            //return ((float)Network.rand.Next(1, 49) / 100 - 0.5f) * (Network.rand.Next(0, 2) == 0 ? 1 : -1);
+            //return ((float)Network.rand.Next(1, 4999999) / 10000000 - 0.5f) * (Network.rand.Next(0, 2) == 0 ? 1 : -1);
+            return ((float)Network.rand.Next(1, 49) / 100 - 0.5f) * (Network.rand.Next(0, 2) == 0 ? 1 : -1);
         }
 
         public static float[] AddVI(float[] v, float n)
