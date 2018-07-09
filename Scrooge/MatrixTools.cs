@@ -225,6 +225,11 @@ namespace Scrooge
             return s;
         }
 
+        public static string Vector2Str(List<float> v)
+        {
+            return Vector2Str(v.ToArray());
+        }
+
         public static string Vector2String(float[] v)
         {
             string s = "VECTOR " + v.Length + "\n";
@@ -252,6 +257,28 @@ namespace Scrooge
             }
 
             return s;
+        }
+
+        public static List<float> NormalizeV(List<float> v)
+        {
+            float l = GetVLength(v);
+
+            List<float> n = new List<float>();
+
+            foreach (float f in v)
+                n.Add(f / l);
+
+            return n;
+        }
+
+        public static float GetVLength(List<float> v)
+        {
+            double sum = 0;
+
+            foreach (float f in v)
+                sum += Math.Pow(f, 2);
+
+            return (float)Math.Sqrt(sum);
         }
     }
 }

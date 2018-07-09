@@ -38,9 +38,9 @@ namespace Scrooge
             Network first, second;
 
             List<Network> children = new List<Network>();
-            
-            int decile = generation.Length / 10 + 1;
-            
+
+            int counter = 0, total = (int)Math.Pow(generation.Length, 2) - generation.Length;
+
             for (int i = 0; i < generation.Length; i++)
             {
                 first = generation[i];
@@ -53,21 +53,20 @@ namespace Scrooge
                         continue;
                     
                     children.Add(first.Cross(second));
-                }
 
-                if (i > 0 && i % decile == 0)
-                    Console.Write('.');
+                    Console.Write("\rready: {0} / {1}   ", ++counter, total);
+                }
             }
             
-            Console.WriteLine("we've got "+ children.Count +" children");
+            Console.WriteLine("\nwe've got "+ children.Count +" children");
             Console.WriteLine("sorting...");
 
             children.Sort();
             
             if (children.Count > 0)
             {
-                Console.WriteLine("best score: " + children[0].GetScore());
-                Console.WriteLine("worst score: " + children[children.Count - 1].GetScore());
+                Console.WriteLine("best score: " + children[0].GetScore() +"; length: "+ children[0].DNA.Length);
+                Console.WriteLine("worst score: " + children[children.Count - 1].GetScore() + "; length: " + children[children.Count - 1].DNA.Length);
                 
                 /*if (bestResult > 0 && bestResult == children[0].GetScore() && bestNetwork.IsRelated(children[0]))
                     stuck_counter++;
@@ -144,7 +143,7 @@ namespace Scrooge
             Network[] g = new Network[size];
             
             for (int i = 0; i < g.Length; i++)
-                g[i] = new Network(100);
+                g[i] = new Network(3);
             
             return g;
         }

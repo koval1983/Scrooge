@@ -5,24 +5,85 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+/**
+ * Input vector is a vector has a length is period * period + 1
+ * where last value is current price
+ * and other values is an input vector
+ */
+
 namespace Scrooge
 {
     class DataProvider
     {
-        private static List<List<List<float>>> data;
-        private static List<float> prices;
+        private static List<List<List<float>>> data;//_data[day][row][item] 
         private static string filename = "D:/Downloads/SPFB.RTS-6.18_170421_180521 (1).txt";
         private static char separator = ';';
-        public static readonly int period = 5;
+        public static readonly int period = 2;
 
         static DataProvider()
         {
             Prepare();
         }
 
-        public static List<float> GetPrices()
+        private static void Prepare()
         {
-            return prices;
+            data = new List<List<List<float>>>();//готовые данные
+            List<List<float>> preparedDailyData;//готовые данные за один день
+
+            List<List<float>> PricesByDays = GetPricesByDays();//все цены по порядку, разбитые по дням
+
+            for (int day = 0; day < PricesByDays.Count; day++)
+            {
+                Console.WriteLine("day {0}", day);
+                preparedDailyData = GetPreparedDailyData(PricesByDays[day]);
+
+                if (preparedDailyData.Count > 0)
+                    data.Add(preparedDailyData);
+
+                Console.ReadKey();
+            }
+        }
+
+        private static List<List<float>> GetPreparedDailyData(List<float> rawDailyData)
+        {
+            List<List<float>> preparedDailyData = new List<List<float>>();
+
+            List<float> inputVector;
+            List<float> pricesSequence;
+
+            for (int index = 0; index < rawDailyData.Count - period*2; index++)
+            {
+                pricesSequence = rawDailyData.GetRange(index, period * 2);
+
+                inputVector = PricesSequenceToInputVector(pricesSequence);
+
+                Console.WriteLine(MatrixTools.Vector2Str(inputVector));
+
+                preparedDailyData.Add(inputVector);
+            }
+
+            return preparedDailyData;
+        }
+
+        public static List<float> PricesSequenceToInputVector(List<float> pricesSequence)
+        {
+            List<float> inputVector = new List<float>();
+            
+            for (int key_from = pricesSequence.Count - 1; key_from >= period; key_from--)
+            {
+                for (int key_to = key_from - 1; key_to >= key_from - period; key_to--)
+                {
+                    inputVector.Add(pricesSequence[key_from] - pricesSequence[key_to]);
+                }
+            }
+
+            inputVector = MatrixTools.NormalizeV(inputVector);
+
+            //do only after normalization
+            if (inputVector.Count > 0)
+                inputVector.Add(pricesSequence[pricesSequence.Count - 1]);//add current price to last position of input vector
+
+            return inputVector;
         }
 
         public static List<List<List<float>>> GetData()
@@ -30,24 +91,22 @@ namespace Scrooge
             return data;
         }
 
-        private static void Prepare()
+        public static void T()
         {
-            string line;
-            
+
+        }
+
+        private static List<List<float>> GetPricesByDays()
+        {
             StreamReader file = new StreamReader(filename);
-
-            List<List<float>> rawData = new List<List<float>>();
-            List<float> dailyRawData = null;
-
-            string[] tmp;
-            string current_date = "";
-
+            List<List<float>> pricesByDays = new List<List<float>>();
+            string line, current_date = "";
+            bool is_first = true;
+            string[] row;
+            List<float> dailyPrices = null;
             int
                 KEY_DATE = 2,
-                KEY_CLOSE = 7,
-                KEY_VOL = 8;
-
-            bool is_first = true;
+                KEY_CLOSE = 7;
 
             while ((line = file.ReadLine()) != null)
             {//skip first row
@@ -57,64 +116,24 @@ namespace Scrooge
                     continue;
                 }
 
-                tmp = line.Replace(',', separator).Replace('.', ',').Split(separator);
+                row = line.Replace(',', separator).Replace('.', ',').Split(separator);
 
-                if (!current_date.Equals(tmp[KEY_DATE]))
+                if (!current_date.Equals(row[KEY_DATE]))
                 {
-                    if(dailyRawData != null)
-                        rawData.Add(dailyRawData);
+                    if (dailyPrices != null)
+                        pricesByDays.Add(dailyPrices);
 
-                    dailyRawData = new List<float>();
+                    dailyPrices = new List<float>();
 
-                    current_date = tmp[KEY_DATE];
+                    current_date = row[KEY_DATE];
                 }
 
-                dailyRawData.Add(float.Parse(tmp[KEY_CLOSE]));
+                dailyPrices.Add(float.Parse(row[KEY_CLOSE]));
             }
 
             file.Close();
 
-            List<List<List<float>>> preparedData = new List<List<List<float>>>();//day => time => input vector
-            List<List<float>> preparedDailyData; //time => input vector
-            List<float> preparedDataRow;
-            float price_from, price_to;
-
-            for (int day = 0; day < rawData.Count; day++)
-            {
-                dailyRawData = rawData[day];
-
-                preparedDailyData = new List<List<float>>();
-                
-                for (int i = 0; i < dailyRawData.Count; i++)
-                {
-                    if (i < period * 2 - 1)
-                        continue;
-
-                    preparedDataRow = new List<float>();
-
-                    for (int from = 0; from < period; from++)//dailyRawData[i - from] - от какой цены считать изменение
-                    {
-                        price_from = dailyRawData[i - from];
-
-                        prices.Add(price_from);
-
-                        for (int to = 1; to <= period; to++)//dailyRawData[i - from - to] - к какой цене считать изменение
-                        {
-                            price_to = dailyRawData[i - from - to];
-
-                            preparedDataRow.Add((price_from - price_to) / price_from);
-                        }
-                    }
-
-                    if(preparedDataRow.Count > 0)
-                        preparedDailyData.Add(preparedDataRow);
-                }
-                
-                if (preparedDailyData.Count > 0)
-                    preparedData.Add(preparedDailyData);
-            }
-
-            data = preparedData;
+            return pricesByDays;
         }
     }
 }

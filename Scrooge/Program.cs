@@ -16,9 +16,9 @@ namespace Scrooge
     {
         static void Main(string[] args)
         {
-            Grow();
+            //Grow();
 
-            //Test();
+            Test();
             
             Console.Write("\n\n\npress any key to exit...");
             Console.ReadKey(true);
@@ -28,12 +28,12 @@ namespace Scrooge
         {
             Farm f = new Farm();
 
-            f.Run(100);
+            f.Run(50);
         }
 
         static void Test()
         {
-            
+            DataProvider.T();
         }
     }
 }

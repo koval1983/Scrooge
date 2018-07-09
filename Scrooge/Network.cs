@@ -110,7 +110,9 @@ namespace Scrooge
             Array.Copy(that.DNA, divider2, new_dna, divider1, that.DNA.Length - divider2);
 
             Network n = new Network(new_dna, this, that);
-            
+
+            n.GetScore();
+
             return n;
         }
 
@@ -303,6 +305,19 @@ namespace Scrooge
 
             return score;
         }
+        /*public float GetScore()
+        {
+            if (need_to_test)
+            {
+                need_to_test = false;
+
+                MakeMatricesAndVectors();
+            }
+
+            NetworkTest nt = new NetworkTest();
+            
+            return nt.Do(this);
+        }*/
 
         public int CompareTo(Object other)
         {
@@ -357,7 +372,7 @@ namespace Scrooge
 
         public float GetLearningRate()
         {
-            return 0.999f;
+            return 0.15f;
         }
         
         protected void PutErrors(int[] keys, float[] _values)
