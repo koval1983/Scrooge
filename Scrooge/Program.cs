@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Alea;
-using Alea.Parallel;
+//using Alea;
+//using Alea.Parallel;
 
-using System.Diagnostics;
+//using System.Diagnostics;
 //using NUnit.Framework;
-using Alea.CSharp;
+//using Alea.CSharp;
 
 namespace Scrooge
 {
@@ -28,12 +28,14 @@ namespace Scrooge
         {
             Farm f = new Farm();
 
-            f.Run(50);
+            f.Run(10);
         }
 
         static void Test()
         {
-            DataProvider.T();
+            Network n = new Network(30);
+
+            n.GetScore();
         }
     }
 }

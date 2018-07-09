@@ -13,7 +13,7 @@ namespace Scrooge
         private static int last_id = 0;
         public static readonly Random rand = new Random();
         private static readonly int relation_degree = 1;
-        private static readonly int input_layer_size = 25;
+        private static readonly int input_layer_size;
         private static readonly int output_layer_size = 3;
 
         private readonly int id;
@@ -28,6 +28,11 @@ namespace Scrooge
         private float[][,] matrices;
         private int [][] incoming_vectors_keys;//"входящие" векторы. weights_matrice x incoming_vector = layer_input
         private List<int>[] layers;//слои - массив (номер слоя -> массив с номерами нейронов)
+
+        static Network()
+        {
+            input_layer_size = DataProvider.period * DataProvider.period;  
+        }
 
         public Network(int[][] dna)
         {

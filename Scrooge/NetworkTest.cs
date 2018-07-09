@@ -16,89 +16,59 @@ namespace Scrooge
 
         private enum Decision { LONG, CASH, SHORT};
         
-        public NetworkTest()
-        {
-            
-        }
-
         public float Do(Network n)
         {
             List<List<List<float>>> data = DataProvider.GetData();
-            
             List<List<float>> dailyData;
-            List<float> dataRow;
-            float price;
-            float[] result, expected_result;
+            float currentPrice = 0;
+            float[] input;
             Decision decision;
-            List<string> rows = new List<string>();
 
-            for (int d = 0; d < data.Count; d++)
+            for (int day = 0; day < data.Count; day++)
             {
-                dailyData = data[d];
+                dailyData = data[day];
 
-                //Console.WriteLine("DAY "+ d +"================================================================================");
+                Console.WriteLine("\rDAY {0} ===================================", day);
 
-                for (int t = 0; t < dailyData.Count; t++)
+                foreach (List<float> row in dailyData)
                 {
-                    dataRow = dailyData[t];
+                    currentPrice = row[row.Count - 1];
+                    input        = row.GetRange(0, row.Count - 1).ToArray();
+                    decision     = GetDecision(n.Query(input));
 
-                    price = dataRow[dataRow.Count - 1];
-
-                    dataRow = dataRow.GetRange(0, dataRow.Count - 1);
-
-                    if (GetCurrentResult(price) > 0)
+                    if (papers != 0)
                     {
-                        
-                        //0 - to short
-                        //1 - to cash
-                        //2 - to long
-                         
-                        if (papers > 0)//long
-                            expected_result = new float[] { 0.01f, 0.01f, 0.99f };
-                        else
-                            expected_result = new float[] { 0.99f, 0.01f, 0.01f };
-
-                        n.Train(expected_result);
-                    }
-                    else if(GetCurrentResult(price) < 0)
-                    {
-                        if (papers > 0)
-                            expected_result = new float[] { 0.99f, 0.01f, 0.01f };
-                        else
-                            expected_result = new float[] { 0.01f, 0.01f, 0.99f };
-
-                        n.Train(expected_result);
+                        if (GetCurrentResult(currentPrice) < 0)
+                        {
+                            if (papers < 0)
+                                n.Train(new float[] { 0.99f, 0.01f, 0.01f });
+                            else
+                                n.Train(new float[] { 0.01f, 0.01f, 0.99f });
+                        }
                     }
 
-                    result = n.Query(dataRow.ToArray());
-
-                    //Console.WriteLine(MatrixTools.Vector2Str(result));
-
-                    decision = GetDecision(result);
-                    
-                    if (decision == Decision.SHORT)
-                        ToShort(price);
-                    else if (decision == Decision.LONG)
-                        ToLong(price);
+                    if (decision == Decision.LONG)
+                        ToLong(currentPrice);
+                    else if (decision == Decision.SHORT)
+                        ToShort(currentPrice);
                     else
-                        ToCash(price);
-
-                    if(t == dataRow.Count - 1)
-                        ToCash(price);
-
-                    rows.Add(price +";"+ last_money_value);
+                        ToCash(currentPrice);
                 }
+                
+                //everyday at the end of day we need to exit to cash
+                ToCash(currentPrice);
+                Console.WriteLine("todays account volume: {0}", money);
+                Console.ReadKey();
             }
 
-            using (System.IO.StreamWriter file = new System.IO.StreamWriter(@"D:\result.csv"))
+            /*using (System.IO.StreamWriter file = new System.IO.StreamWriter(@"D:\result.csv"))
             {
                 foreach (string row in rows)
                 {
                     file.WriteLine(row);
                 }
-            }
+            }*/
             
-
             return money;
         }
 
@@ -125,7 +95,7 @@ namespace Scrooge
             else if (papers > 0)
                 return;
 
-            //Console.WriteLine("To long");
+            Console.Write("To long:  ");
 
             Buy(price);
         }
@@ -137,7 +107,7 @@ namespace Scrooge
             else if (papers < 0)
                 return;
 
-            //Console.WriteLine("To short");
+            Console.Write("To short: ");
 
             Sell(price);
         }
@@ -146,8 +116,8 @@ namespace Scrooge
         {
             if (papers == 0)
                 return;
-
-            //Console.WriteLine("To cash");
+            
+            Console.Write("To cash:  ");
 
             if (papers > 0)
                 Sell(price);
@@ -160,7 +130,7 @@ namespace Scrooge
 
         private void Buy(float price, int qty = 1)
         {
-            //Console.WriteLine("buy "+ qty +"x"+ price);
+            Console.WriteLine("buy  "+ qty +"x"+ price);
 
             last_trade_price = price;
             papers += qty;
@@ -169,7 +139,7 @@ namespace Scrooge
 
         private void Sell(float price, int qty = 1)
         {
-            //Console.WriteLine("sell " + qty + "x" + price);
+            Console.WriteLine("sell " + qty + "x" + price);
 
             last_trade_price = price;
             papers -= qty;

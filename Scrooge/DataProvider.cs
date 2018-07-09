@@ -18,7 +18,7 @@ namespace Scrooge
         private static List<List<List<float>>> data;//_data[day][row][item] 
         private static string filename = "D:/Downloads/SPFB.RTS-6.18_170421_180521 (1).txt";
         private static char separator = ';';
-        public static readonly int period = 2;
+        public static readonly int period = 5;
 
         static DataProvider()
         {
@@ -34,13 +34,13 @@ namespace Scrooge
 
             for (int day = 0; day < PricesByDays.Count; day++)
             {
-                Console.WriteLine("day {0}", day);
+                ///Console.WriteLine("day {0}", day);
                 preparedDailyData = GetPreparedDailyData(PricesByDays[day]);
 
                 if (preparedDailyData.Count > 0)
                     data.Add(preparedDailyData);
 
-                Console.ReadKey();
+                //Console.ReadKey();
             }
         }
 
@@ -51,13 +51,13 @@ namespace Scrooge
             List<float> inputVector;
             List<float> pricesSequence;
 
-            for (int index = 0; index < rawDailyData.Count - period*2; index++)
+            for (int index = 0; index <= rawDailyData.Count - period*2; index++)
             {
                 pricesSequence = rawDailyData.GetRange(index, period * 2);
 
                 inputVector = PricesSequenceToInputVector(pricesSequence);
 
-                Console.WriteLine(MatrixTools.Vector2Str(inputVector));
+                //Console.WriteLine(MatrixTools.Vector2Str(inputVector));
 
                 preparedDailyData.Add(inputVector);
             }
@@ -82,7 +82,7 @@ namespace Scrooge
             //do only after normalization
             if (inputVector.Count > 0)
                 inputVector.Add(pricesSequence[pricesSequence.Count - 1]);//add current price to last position of input vector
-
+            //Console.WriteLine("pricesSequence[pricesSequence.Count - 1] = {0}", pricesSequence[pricesSequence.Count - 1]);
             return inputVector;
         }
 
