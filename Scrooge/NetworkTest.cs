@@ -8,6 +8,7 @@ namespace Scrooge
 {
     class NetworkTest
     {
+        private int number_of_learning_trades = 1;
         private float last_money_value = 0;
         private float money = 0;
         private int papers = 0;
@@ -23,12 +24,13 @@ namespace Scrooge
             float currentPrice = 0;
             float[] input;
             Decision decision;
+            List<string> rows_to_save = new List<string>();
 
             for (int day = 0; day < data.Count; day++)
             {
                 dailyData = data[day];
 
-                Console.WriteLine("\rDAY {0} ===================================", day);
+                //Console.WriteLine("\rDAY {0} ===================================", day);
 
                 foreach (List<float> row in dailyData)
                 {
@@ -38,12 +40,19 @@ namespace Scrooge
 
                     if (papers != 0)
                     {
-                        if (GetCurrentResult(currentPrice) < 0)
+                        /*if (GetCurrentResult(currentPrice) < 0)
                         {
                             if (papers < 0)
                                 n.Train(new float[] { 0.99f, 0.01f, 0.01f });
                             else
                                 n.Train(new float[] { 0.01f, 0.01f, 0.99f });
+                        }
+                        else*/ if (number_of_trades < 5000 && GetCurrentResult(currentPrice) > 0)
+                        {
+                            if (papers < 0)
+                                n.Train(new float[] { 0.01f, 0.01f, 0.99f });
+                            else
+                                n.Train(new float[] { 0.99f, 0.01f, 0.01f });
                         }
                     }
 
@@ -53,24 +62,51 @@ namespace Scrooge
                         ToShort(currentPrice);
                     else
                         ToCash(currentPrice);
+                    
+                    rows_to_save.Add(currentPrice +";"+ last_money_value);
                 }
                 
                 //everyday at the end of day we need to exit to cash
                 ToCash(currentPrice);
-                Console.WriteLine("todays account volume: {0}", money);
-                Console.ReadKey();
+                
+                //Console.ReadKey();
             }
+            Console.WriteLine("account volume: {0}", money);
+            Console.WriteLine("nuber of trades: {0}", number_of_trades);
 
-            /*using (System.IO.StreamWriter file = new System.IO.StreamWriter(@"D:\result.csv"))
+            Console.WriteLine("total profit: {0}", all_profits);
+            Console.WriteLine("number_of_profitable_trades: {0}", number_of_profitable_trades);
+
+            if(number_of_profitable_trades > 0)
+                Console.WriteLine("average profit: {0}", all_profits / number_of_profitable_trades);
+
+            Console.WriteLine("total loss: {0}", all_losses);
+            Console.WriteLine("number_of_unprofitable_trades: {0}", number_of_unprofitable_trades);
+
+            if (number_of_unprofitable_trades > 0)
+                Console.WriteLine("average profit: {0}", all_losses / number_of_unprofitable_trades);
+
+            Console.WriteLine("number_of_zero_trades: {0}", number_of_zero_trades);
+
+            if (number_of_trades > 0)
+                Console.WriteLine("average trade: {0}", money/number_of_trades);
+
+            using (System.IO.StreamWriter file = new System.IO.StreamWriter(@"D:\result.csv"))
             {
-                foreach (string row in rows)
+                foreach (string row in rows_to_save)
                 {
                     file.WriteLine(row);
                 }
-            }*/
-            
+            }
+
             return money;
         }
+
+        private float all_profits = 0;
+        private float all_losses = 0;
+        private int number_of_profitable_trades = 0;
+        private int number_of_unprofitable_trades = 0;
+        private int number_of_zero_trades = 0;
 
 
         /**
@@ -95,7 +131,7 @@ namespace Scrooge
             else if (papers > 0)
                 return;
 
-            Console.Write("To long:  ");
+            //Console.Write("To long:  ");
 
             Buy(price);
         }
@@ -107,7 +143,7 @@ namespace Scrooge
             else if (papers < 0)
                 return;
 
-            Console.Write("To short: ");
+            //Console.Write("To short: ");
 
             Sell(price);
         }
@@ -116,8 +152,25 @@ namespace Scrooge
         {
             if (papers == 0)
                 return;
-            
-            Console.Write("To cash:  ");
+
+            if (number_of_trades >= number_of_learning_trades)
+            {
+                if (GetCurrentResult(price) > 0)
+                {
+                    all_profits += GetCurrentResult(price);
+                    number_of_profitable_trades++;
+                }
+                else if (GetCurrentResult(price) < 0)
+                {
+                    all_losses += GetCurrentResult(price);
+                    number_of_unprofitable_trades++;
+                }
+                else
+                {
+                    number_of_zero_trades++;
+                }
+            }
+            //Console.Write("To cash:  ");
 
             if (papers > 0)
                 Sell(price);
@@ -130,7 +183,7 @@ namespace Scrooge
 
         private void Buy(float price, int qty = 1)
         {
-            Console.WriteLine("buy  "+ qty +"x"+ price);
+            //Console.WriteLine("buy  "+ qty +"x"+ price);
 
             last_trade_price = price;
             papers += qty;
@@ -139,7 +192,7 @@ namespace Scrooge
 
         private void Sell(float price, int qty = 1)
         {
-            Console.WriteLine("sell " + qty + "x" + price);
+            //Console.WriteLine("sell " + qty + "x" + price);
 
             last_trade_price = price;
             papers -= qty;

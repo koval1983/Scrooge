@@ -12,10 +12,11 @@ namespace Scrooge
     {
         private static int last_id = 0;
         public static readonly Random rand = new Random();
-        private static readonly int relation_degree = 1;
+        private static readonly int relation_degree = 3;
         private static readonly int input_layer_size;
         private static readonly int output_layer_size = 3;
 
+        public int age = 0;
         private readonly int id;
         private int[][] parents = new int[0][];
         public readonly int[][] DNA;
@@ -405,13 +406,13 @@ namespace Scrooge
                 {
                     Console.WriteLine("NaN is gotten");
                     Console.WriteLine(errors[keys[i]]);
-                    Console.ReadKey();
+                    ///Console.ReadKey();
                 }
                 if (float.IsInfinity(errors[keys[i]]))
                 {
                     Console.WriteLine("Infinity is gotten");
                     Console.WriteLine(errors[keys[i]]);
-                    Console.ReadKey();
+                   // Console.ReadKey();
                 }
             }
             return e;
@@ -606,6 +607,55 @@ namespace Scrooge
             }
             
             return str;
+        }
+        /**
+         * DNA to save in txt file
+         * | l0 l1 l2 | l1 l2 l3 | ... | 
+         */
+        
+        public string Dna2StringToSave()
+        {
+            List<string> res = new List<string>();
+            List<string> gen;
+
+            foreach (int[] g in DNA)
+            {
+                gen = new List<string>();
+
+                foreach (int l in g)
+                {
+                    gen.Add(l.ToString());
+                }
+
+                if (gen.Count > 0)
+                    res.Add(string.Join("-", gen.ToArray()));
+                else
+                    res.Add("");
+            }
+
+            return string.Join("|", res.ToArray());
+        }
+
+        public static int[][] SavedStringToDNA(string saved_string)
+        {
+            string[] gens = saved_string.Split('|');
+            string[] links;
+
+            int[][] dna = new int[gens.Length][];
+
+            for (int g = 0; g < gens.Length; g++)
+            {
+                links = gens[g].Split(new char[]{ '-'}, StringSplitOptions.RemoveEmptyEntries);
+
+                dna[g] = new int[links.Length];
+
+                for (int l = 0; l < links.Length; l++)
+                {
+                    dna[g][l] = int.Parse(links[l]);
+                }
+            }
+
+            return dna;
         }
     }
 }

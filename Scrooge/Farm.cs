@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,7 +18,10 @@ namespace Scrooge
 
         public void Run(int poulation_size)
         {
-            Network[] generation = GetFirstGeneration(poulation_size);
+            Network[] generation = LoadGeneration();
+
+            if(generation.Length == 0)
+                generation = GetFirstGeneration(poulation_size);
             
             Console.WriteLine("evolution started...\n");
 
@@ -37,9 +41,15 @@ namespace Scrooge
 
             Network first, second;
 
-            List<Network> children = new List<Network>();
+            int
+                counter = 0,
+                total = (int)Math.Pow(generation.Length, 2);
 
-            int counter = 0, total = (int)Math.Pow(generation.Length, 2) - generation.Length;
+            List<Network> children = new List<Network>(total);
+            
+            //Thread[] threads = new Thread[10];
+            Thread[] threads = new Thread[2];
+            int t = 0, index = 0;
 
             for (int i = 0; i < generation.Length; i++)
             {
@@ -49,15 +59,37 @@ namespace Scrooge
                 {
                     second = generation[j];
 
-                    if (i == j)
-                        continue;
-                    
-                    children.Add(first.Cross(second));
+                    if (first.IsRelated(second))
+                        second = new Network(first.DNA.Length);
+
+                    t = 0;
+
+                    while (true)
+                    {
+                        if (threads[t] == null || !threads[t].IsAlive)
+                        {
+                            threads[t] = new Thread(Cross);
+
+                            threads[t].Start(new Couple(first, second, index++, children));
+
+                            break;
+                        }
+
+                        if (++t >= threads.Length)
+                            t = 0;
+                    }
+                    //children.Add(first.Cross(second));
 
                     Console.Write("\rready: {0} / {1}   ", ++counter, total);
                 }
             }
-            
+
+            for (int i = 0; i < threads.Length; i++)
+            {
+                if (threads[i] != null && threads[i].IsAlive)
+                    threads[i].Join();
+            }
+
             Console.WriteLine("\nwe've got "+ children.Count +" children");
             Console.WriteLine("sorting...");
 
@@ -92,58 +124,68 @@ namespace Scrooge
             return generation;
         }
 
+        static void Cross(object couple)
+        {
+            Couple c = (Couple)couple;
+
+            c.Cross();
+        }
+
         protected Network[] FilterBrothersAndSisters(List<Network> children, int length, int generation_number)
         {
-            Console.WriteLine("filtering...");
-
-            Network[] new_generation = new Network[length];
-            Network pretender;
-
-            int last_place = 0;
-            int decile = children.Count / 10;
-
-            for (int i = 0; i < children.Count && last_place < new_generation.Length; i++)
-            {
-                pretender = children[i];
-
-                for (int j = 0; j < last_place; j++)
-                {
-                    if(pretender.IsRelated(new_generation[j]))
-                        goto loop0;
-                }
-                
-                new_generation[last_place++] = pretender;
-            loop0:;
-
-                if (i > 0 && decile > 0 && i % decile == 0)
-                    Console.Write('.');
-            }
-
-            Console.WriteLine();
-
-            Network[] toSave = new Network[last_place];
-
-            Array.Copy(new_generation, toSave, last_place);
+            Network[] new_generation = children.GetRange(0, length).ToArray();
             
-            int aliens = 0;
-            
-            for (; last_place < length; last_place++)
-            {
-                new_generation[last_place] = new Network(new_generation[0].DNA.Length);
-                aliens++;
-            }
-
-            Console.WriteLine("aliens: " + aliens);
+            Save(new_generation);
 
             return new_generation;
         }
-        
+
+        private static string saved_networks = @"D:\generations\save.txt";
+        private void Save(Network[] generation)
+        {
+            using (System.IO.StreamWriter file = new System.IO.StreamWriter(saved_networks))
+            {
+                foreach (Network n in generation)
+                {
+                    file.WriteLine(n.Dna2StringToSave());
+                }
+            }
+        }
+
+        public Network[] LoadGeneration()
+        {
+            Console.WriteLine("trying to load from file \"{0}\"...", saved_networks);
+
+            List<Network> generation = new List<Network>();
+
+            try
+            {
+                StreamReader file = new StreamReader(saved_networks);
+                string line;
+
+                while ((line = file.ReadLine()) != null)
+                {
+                    generation.Add(new Network(Network.SavedStringToDNA(line)));
+                }
+
+                file.Close();
+            }
+            catch (FileNotFoundException e)
+            {
+                Console.WriteLine("error: {0}", e.Message);
+            }
+            
+            Console.WriteLine("{0} Networks is loaded", generation.Count);
+
+            return generation.ToArray();
+        }
+
         public Network[] GetFirstGeneration(int size)
         {
             Network[] g = new Network[size];
             
             for (int i = 0; i < g.Length; i++)
-                g[i] = new Network(3);
+                g[i] = new Network(10);
             
             return g;
         }

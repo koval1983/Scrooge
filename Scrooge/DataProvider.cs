@@ -16,7 +16,14 @@ namespace Scrooge
     class DataProvider
     {
         private static List<List<List<float>>> data;//_data[day][row][item] 
-        private static string filename = "D:/Downloads/SPFB.RTS-6.18_170421_180521 (1).txt";
+        //private static string filename = "D:/Downloads/SPFB.RTS-6.18_170421_180521 (1).txt";
+        //private static string filename = "D:/Downloads/GAZP_170710_180709.txt";
+        //private static string filename = "D:/Downloads/SPFB.RTS_160710_180709.txt";
+        //private static string filename = "D:/Downloads/GAZP_160710_180709.txt";
+        private static string filename = "D:/Downloads/MTSS_160710_180709.txt";
+        //private static string filename = "D:/Downloads/MTSS_140701_160701.txt";
+        //private static string filename = "D:/Downloads/ALRS_160711_180710.txt";
+        //private static string filename = "D:/Downloads/CHMF_160711_180710.txt";
         private static char separator = ';';
         public static readonly int period = 5;
 
@@ -34,7 +41,6 @@ namespace Scrooge
 
             for (int day = 0; day < PricesByDays.Count; day++)
             {
-                ///Console.WriteLine("day {0}", day);
                 preparedDailyData = GetPreparedDailyData(PricesByDays[day]);
 
                 if (preparedDailyData.Count > 0)

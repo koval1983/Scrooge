@@ -28,14 +28,21 @@ namespace Scrooge
         {
             Farm f = new Farm();
 
-            f.Run(10);
+            f.Run(15);
         }
 
         static void Test()
         {
-            Network n = new Network(30);
+            
 
-            n.GetScore();
+            while (true)
+            {
+                Network n2 = new Network(Network.SavedStringToDNA("|||||||||||||||||||||||||||||||||||||||||||||||||||||||"));
+
+                Console.WriteLine(n2.GetScore());
+
+                Console.ReadKey(true);
+            }
         }
     }
 }
